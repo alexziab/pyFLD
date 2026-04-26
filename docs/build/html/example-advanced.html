@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Advanced example: protoplanetary disk &mdash; pyFLD 0.4.3 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Best Practices" href="best-practices.html" />
+    <link rel="prev" title="Basic example: 1D diffusion equation" href="example-basic.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pyFLD
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="framework.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="framework.html#implementation">Implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="example-basic.html">Basic example: 1D diffusion equation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Advanced example: protoplanetary disk</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="best-practices.html">Best Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting &amp; FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">pyFLD</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyFLD</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">Advanced example: protoplanetary disk</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/example-advanced.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="advanced-example-protoplanetary-disk">
+<h1>Advanced example: protoplanetary disk<a class="headerlink" href="#advanced-example-protoplanetary-disk" title="Permalink to this heading"></a></h1>
+<p>This example shows how to set up a protoplanetary disk with viscous heating, frequency-dependent ray-traced irradiation, and radiative transfer with Rosseland and Planck mean opacities. Several similar examples are included in the <code class="docutils literal notranslate"><span class="pre">examples</span></code> folder of the repository, which you can run and modify as needed.</p>
+<p>To simplify the computation of frequency-dependent opacities, we will use the <a class="reference external" href="https://github.com/cdominik/optool">optool</a> package. After running:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>optool<span class="w"> </span>-radmc<span class="w"> </span>01um<span class="w"> </span>-a<span class="w"> </span><span class="m">0</span>.1
+</pre></div>
+</div>
+<p>we have a file <code class="docutils literal notranslate"><span class="pre">dustkappa_01um.inp</span></code> containing absorption and scattering opacities and the scattering asymmetry parameter as a function of wavelength for 0.1 μm grains. We will use this to set up frequency-dependent irradiation in our example.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
+<span class="kn">import</span> <span class="nn">pyFLD</span> <span class="k">as</span> <span class="nn">fld</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="n">wl</span><span class="p">,</span> <span class="n">kabs</span><span class="p">,</span> <span class="n">ksca</span><span class="p">,</span> <span class="n">g_asy</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">parse_optool_file</span><span class="p">(</span><span class="s1">&#39;dustkappa_01um.inp&#39;</span><span class="p">)</span>
+
+<span class="c1"># star object</span>
+<span class="n">star</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">star</span><span class="o">.</span><span class="n">Star</span><span class="p">(</span><span class="n">M</span><span class="o">=</span><span class="mi">1</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">M_sun</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="mi">1</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">L_sun</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">5772</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">K</span><span class="p">,</span> <span class="n">wl</span><span class="o">=</span><span class="n">wl</span><span class="p">)</span>
+
+<span class="c1"># grid object</span>
+<span class="n">ri</span>   <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_domain_with_ghosts</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">au</span>
+<span class="n">thi</span>  <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_domain_with_ghosts</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="o">-</span><span class="mf">0.35</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span> <span class="c1"># half disk in polar direction</span>
+<span class="n">phii</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_domain_with_ghosts</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># axisymmetric grid</span>
+<span class="n">grid</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">Grid</span><span class="p">(</span><span class="n">ri</span><span class="p">,</span> <span class="n">thi</span><span class="p">,</span> <span class="n">phii</span><span class="p">,</span> <span class="n">geometry</span><span class="o">=</span><span class="s1">&#39;spherical&#39;</span><span class="p">)</span>
+
+<span class="c1"># fluid objects</span>
+<span class="n">Gas</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">fluids</span><span class="o">.</span><span class="n">Gas</span><span class="p">(</span><span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span> <span class="n">star</span><span class="o">=</span><span class="n">star</span><span class="p">,</span> <span class="n">irradiation</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">viscosity</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">Dust</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">fluids</span><span class="o">.</span><span class="n">Dust</span><span class="p">(</span><span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span> <span class="n">star</span><span class="o">=</span><span class="n">star</span><span class="p">,</span> <span class="n">irradiation</span><span class="o">=</span><span class="s1">&#39;freqdep&#39;</span><span class="p">,</span>
+                    <span class="n">kabs_wl</span><span class="o">=</span><span class="n">kabs</span><span class="p">,</span> <span class="n">ksca_wl</span><span class="o">=</span><span class="n">ksca</span><span class="p">,</span> <span class="n">g_wl</span><span class="o">=</span><span class="n">g_asy</span><span class="p">,</span>
+                <span class="n">grain_rho</span><span class="o">=</span><span class="mi">1</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">g</span><span class="o">/</span><span class="n">u</span><span class="o">.</span><span class="n">cm</span><span class="o">**</span><span class="mi">3</span><span class="p">,</span> <span class="n">grain_size</span><span class="o">=</span><span class="mf">0.1</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">um</span><span class="p">)</span>
+
+<span class="c1"># set up fluids: density has a radial power law and Gaussian vertical profile, temperature is a radial power law, and alpha viscosity is constant</span>
+<span class="n">R_</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">R</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s1">&#39;au&#39;</span><span class="p">)</span>
+<span class="n">z_</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">z</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s1">&#39;au&#39;</span><span class="p">)</span>
+<span class="n">H_</span> <span class="o">=</span> <span class="mf">0.03</span> <span class="o">*</span> <span class="n">R_</span> <span class="o">**</span> <span class="mf">1.25</span>
+<span class="n">rho</span> <span class="o">=</span> <span class="mf">3e-10</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">g</span><span class="o">/</span><span class="n">u</span><span class="o">.</span><span class="n">cm</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="n">R_</span> <span class="o">**</span> <span class="o">-</span><span class="mf">1.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">z_</span><span class="o">/</span><span class="n">H_</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">T</span> <span class="o">=</span> <span class="mi">150</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">K</span> <span class="o">*</span> <span class="n">R_</span> <span class="o">**</span> <span class="o">-</span><span class="mf">0.5</span>
+
+<span class="c1"># gas properties</span>
+<span class="n">Gas</span><span class="o">.</span><span class="n">set_density</span><span class="p">(</span><span class="n">rho</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">grid</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+<span class="n">Gas</span><span class="o">.</span><span class="n">set_temperature</span><span class="p">(</span><span class="n">T</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">grid</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+<span class="n">Gas</span><span class="o">.</span><span class="n">enroll_alpha</span><span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="mf">1e-4</span><span class="p">)</span> <span class="c1"># w/ viscous heating</span>
+<span class="n">Gas</span><span class="o">.</span><span class="n">enroll_tau0</span><span class="p">(</span><span class="n">fld</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">get_tau0_Flock_2019</span><span class="p">)</span>
+<span class="n">Gas</span><span class="o">.</span><span class="n">enroll_kappaR</span><span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">cm</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">u</span><span class="o">.</span><span class="n">g</span><span class="p">)</span>
+<span class="n">Gas</span><span class="o">.</span><span class="n">enroll_kappaP</span><span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">cm</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">u</span><span class="o">.</span><span class="n">g</span><span class="p">)</span>
+<span class="n">Gas</span><span class="o">.</span><span class="n">enroll_kappaPstar</span><span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">cm</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">u</span><span class="o">.</span><span class="n">g</span><span class="p">)</span>
+
+<span class="c1"># dust properties</span>
+<span class="n">Dust</span><span class="o">.</span><span class="n">set_density</span><span class="p">(</span><span class="n">rho</span> <span class="o">*</span> <span class="mf">1e-3</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">grid</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+<span class="n">Dust</span><span class="o">.</span><span class="n">set_temperature</span><span class="p">(</span><span class="n">T</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">grid</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+<span class="n">Dust</span><span class="o">.</span><span class="n">enroll_alpha</span><span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="mf">1e-2</span><span class="p">)</span> <span class="c1"># w/o viscous heating</span>
+<span class="n">Dust</span><span class="o">.</span><span class="n">enroll_col0</span><span class="p">(</span><span class="n">fld</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">get_col0_Flock_2019</span><span class="p">)</span>
+<span class="c1"># no need to enroll kappaR/kappaP/kappaPstar for the dust as they will be automatically computed from the provided frequency-dependent opacity model</span>
+
+<span class="n">Gas</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
+<span class="n">Dust</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
+
+<span class="n">Disk</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">FLD</span><span class="o">.</span><span class="n">RadiativeEnvironment</span><span class="p">([</span><span class="n">Gas</span><span class="p">,</span> <span class="n">Dust</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;disk&#39;</span><span class="p">)</span>
+
+<span class="c1"># 10 K in all boundaries</span>
+<span class="n">bounds</span> <span class="o">=</span> <span class="p">[</span><span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">BOUNDARY_FIXEDVALUE</span><span class="p">]</span> <span class="o">*</span> <span class="mi">6</span>
+<span class="n">vals</span>   <span class="o">=</span> <span class="p">[</span><span class="n">fld</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">T_to_Er</span><span class="p">(</span><span class="mi">10</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">K</span><span class="p">)]</span> <span class="o">*</span> <span class="mi">6</span>
+<span class="n">bounds</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">BOUNDARY_REFLECTIVE</span> <span class="c1"># reflective midplane</span>
+<span class="n">Disk</span><span class="o">.</span><span class="n">declare_boundaries</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span>
+
+<span class="c1"># now run model for a very large time step to get close to radiative equilibrium. This will take several steps.</span>
+
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">):</span> <span class="n">Disk</span><span class="o">.</span><span class="n">advance</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mf">1e10</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">yr</span><span class="p">)</span>
+
+<span class="c1"># you can now plot the results, for example the midplane temperature profile:</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="n">r</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">grid</span><span class="o">.</span><span class="n">act1</span><span class="p">]</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s1">&#39;au&#39;</span><span class="p">)</span>
+<span class="n">T_mid</span> <span class="o">=</span> <span class="n">Disk</span><span class="o">.</span><span class="n">tmp</span><span class="p">[</span><span class="n">grid</span><span class="o">.</span><span class="n">active</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,:]</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s1">&#39;K&#39;</span><span class="p">)</span> <span class="c1"># [phi=0, theta=-1 (midplane), r=all]</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">T_mid</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;pyFLD&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">145</span> <span class="o">*</span> <span class="n">r</span> <span class="o">**</span> <span class="o">-</span><span class="mf">0.49</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Power law fit&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Radius (au)&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Midplane Temperature (K)&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Midplane Temperature Profile&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+
+<span class="c1"># you can also opt to enforce hydrostatic equilibrium every few steps for a more self-consistent solution</span>
+<span class="n">Disk</span><span class="o">.</span><span class="n">configure_solver</span><span class="p">(</span><span class="n">rtol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span> <span class="c1"># for this example</span>
+<span class="n">Disk</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">):</span> <span class="n">Disk</span><span class="o">.</span><span class="n">advance</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mf">1e10</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">yr</span><span class="p">)</span>
+    <span class="n">Disk</span><span class="o">.</span><span class="n">enforce_hydrostatic_equilibrium</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;finished supercycle </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+<span class="c1"># and then plot the results again</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">grid</span><span class="o">.</span><span class="n">act1</span><span class="p">]</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s1">&#39;au&#39;</span><span class="p">)</span>
+<span class="n">T_mid</span> <span class="o">=</span> <span class="n">Disk</span><span class="o">.</span><span class="n">tmp</span><span class="p">[</span><span class="n">grid</span><span class="o">.</span><span class="n">active</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,:]</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s1">&#39;K&#39;</span><span class="p">)</span> <span class="c1"># [phi=0, theta=-1 (midplane), r=all]</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">T_mid</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;pyFLD&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="mi">145</span> <span class="o">*</span> <span class="n">r</span> <span class="o">**</span> <span class="o">-</span><span class="mf">0.49</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Power law fit&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Radius (au)&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Midplane Temperature (K)&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Midplane Temperature Profile&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="example-basic.html" class="btn btn-neutral float-left" title="Basic example: 1D diffusion equation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="best-practices.html" class="btn btn-neutral float-right" title="Best Practices" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, A. Ziampras.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

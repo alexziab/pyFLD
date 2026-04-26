@@ -1,0 +1,42 @@
+[build-system]
+requires = ["meson-python", "setuptools", "wheel"]
+build-backend = 'mesonpy'
+
+[project]
+name = 'pyFLD'
+version = '0.4.3'
+description = 'Radiative transfer with the flux-limited diffusion approximation in astrophysical simulations.'
+readme = { file = 'README.md', content-type = 'text/markdown' }
+keywords = [
+  "numerical",
+  "simulation",
+  "science",
+  "physics",
+  "astrophysics",
+  "astronomy",
+]
+authors = [
+  { name = "Alex Ziampras", email = "a.ziampras@lmu.de" },
+]
+maintainers = [
+  { name = "Alex Ziampras", email = "a.ziampras@lmu.de" },
+]
+license = { text = "GPLv3" }
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Natural Language :: English",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = ["numpy", "astropy", "scipy"]
+
+[project.urls]
+Repository = "https://github.com/alexziab/pyFLD"
+Documentation = "https://github.com/alexziab/pyFLD/README.md"

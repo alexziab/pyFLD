@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4. Radiative environment &mdash; pyFLD 0.4.3 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="5. Basic IO" href="usage-io.html" />
+    <link rel="prev" title="3. Fluids (Gas, Dust)" href="usage-fluid.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pyFLD
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="framework.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="framework.html#implementation">Implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="usage.html">Usage</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="usage.html#importing-the-package">Importing the package</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="usage-tools.html">0. Various tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-grid.html">1. the Grid class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-star.html">2. the Star class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-fluid.html">3. Fluids (Gas, Dust)</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">4. Radiative environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-io.html">5. Basic IO</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-radmc_helper.html">6. RADMC-3D integration</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best-practices.html">Best Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting &amp; FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">pyFLD</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyFLD</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="usage.html">Usage</a></li>
+      <li class="breadcrumb-item active">4. Radiative environment</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/usage-FLD.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="radiative-environment">
+<h1>4. Radiative environment<a class="headerlink" href="#radiative-environment" title="Permalink to this heading"></a></h1>
+<p>So far we have set up the grid and star objects, and one or more fluid objects. We can now set up a radiative environment that combines all of these ingredients to perform radiative transfer calculations. This is done with the <code class="docutils literal notranslate"><span class="pre">fld.FLD.RadiativeEnvironment</span></code> class, which is initialized with the following call signature:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fld</span><span class="o">.</span><span class="n">FLD</span><span class="o">.</span><span class="n">RadiativeEnvironment</span><span class="p">(</span>
+    <span class="n">fluids</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">constant_fluxlimiter</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">preconditioner</span><span class="o">=</span><span class="s1">&#39;ilu&#39;</span><span class="p">,</span>
+    <span class="n">implicit_viscosity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">debug</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The only mandatory argument (and likely the only one you need to worry about) is the list of fluid objects that you want to include in the radiative transfer calculations. For example, with what we have set up so far, we can initialize the radiative environment with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">FLD</span><span class="o">.</span><span class="n">RadiativeEnvironment</span><span class="p">([</span><span class="n">gas</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>This is enough to declare a protoplanetary disk that accounts for viscous heating with α viscosity, ray-traced irradiation with gray opacities, and radiative transfer with Rosseland and Planck mean opacities.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment</span></code> class is slightly different as most of the physics have already been set up in the fluid objects. However, we also need to prescribe boundary conditions for the radiative transfer calculations. This is done with the method:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span><span class="o">.</span><span class="n">declare_boundaries</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The method expects two lists, 6 elements each, that specify the type of boundary condition and the corresponding value for each of the 6 boundaries (inner and outer in each of the 3 dimensions). The allowed boundary types are <code class="docutils literal notranslate"><span class="pre">fld.grid.BOUNDARY_FIXEDVALUE</span></code> for fixed-value boundaries, and <code class="docutils literal notranslate"><span class="pre">fld.grid.BOUNDARY_REFLECTIVE</span></code> for zero-gradient (reflective) boundaries. The expected values are the radiation energy density <span class="math notranslate nohighlight">\(E_\mathrm{r}\)</span> for fixed-value boundaries, and are not needed for reflective boundaries. For example, to set a fixed value boundary condition that corresponds to a radiation temperature of 10 K at the inner radial edge, and reflective boundaries everywhere else, we can do:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
+
+<span class="n">bounds</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">BOUNDARY_FIXEDVALUE</span><span class="p">,</span>  <span class="c1"># inner radial</span>
+    <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">BOUNDARY_REFLECTIVE</span><span class="p">,</span>  <span class="c1"># outer radial</span>
+    <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">BOUNDARY_REFLECTIVE</span><span class="p">,</span>  <span class="c1"># inner polar</span>
+    <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">BOUNDARY_REFLECTIVE</span><span class="p">,</span>  <span class="c1"># outer polar</span>
+    <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">BOUNDARY_REFLECTIVE</span><span class="p">,</span>  <span class="c1"># inner azimuthal</span>
+    <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">BOUNDARY_REFLECTIVE</span><span class="p">,</span>  <span class="c1"># outer azimuthal</span>
+<span class="p">]</span>
+
+<span class="n">vals</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">fld</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">T_to_Er</span><span class="p">(</span><span class="mi">10</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">K</span><span class="p">),</span> <span class="c1"># Erad at inner radial edge for T=10 K</span>
+    <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>  <span class="c1"># not needed for reflective boundaries</span>
+<span class="p">]</span>
+
+<span class="n">Disk</span><span class="o">.</span><span class="n">declare_boundaries</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We are now ready to perform radiative transfer calculations with the <code class="docutils literal notranslate"><span class="pre">Disk</span></code> object. A typical call to the diffusion solver looks like:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span><span class="o">.</span><span class="n">advance</span><span class="p">(</span><span class="n">dt</span><span class="o">=&lt;</span><span class="n">Quantity</span> <span class="mf">1.</span> <span class="n">yr</span><span class="o">&gt;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>which advances the radiation field by a time step of 1 year.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment</span></code> class also includes a method that calls <code class="docutils literal notranslate"><span class="pre">compute_hydrostatic_equilibrium</span></code> for all fluids and then applies the resulting density profiles, taking into account which fluids correspond to gas or dust. It is simply called with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span><span class="o">.</span><span class="n">enforce_hydrostatic_equilibrium</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Additional control over the solver can be achieved with the <code class="docutils literal notranslate"><span class="pre">Disk.configure_solver</span></code> method, which accepts keyword arguments that are passed to the underlying solver:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">solver</span></code>: the name of the sparse matrix solver used. Options are <code class="docutils literal notranslate"><span class="pre">bicgstab</span></code> (default), <code class="docutils literal notranslate"><span class="pre">spsolve</span></code>, <code class="docutils literal notranslate"><span class="pre">gmres</span></code>, <code class="docutils literal notranslate"><span class="pre">cg</span></code>, <code class="docutils literal notranslate"><span class="pre">cgs</span></code>, <code class="docutils literal notranslate"><span class="pre">lgmres</span></code>, <code class="docutils literal notranslate"><span class="pre">minres</span></code>, and <code class="docutils literal notranslate"><span class="pre">qmr</span></code>, but note that the module has only really been tested with <code class="docutils literal notranslate"><span class="pre">bicgstab</span></code> and sometimes <code class="docutils literal notranslate"><span class="pre">spsolve</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rtol</span></code>: the relative tolerance for the iterative solver (default is <span class="math notranslate nohighlight">\(10^{-8}\)</span>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxiter</span></code>: the maximum number of iterations for the iterative solver (default is 10000).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">guess</span></code>: if <code class="docutils literal notranslate"><span class="pre">True</span></code>, passes the current radiation energy density as an initial guess, which can be useful for speeding up convergence when performing multiple calls to <code class="docutils literal notranslate"><span class="pre">advance</span></code> in a time-dependent simulation. Otherwise, the solver starts with a zero-valued initial guess (default is <code class="docutils literal notranslate"><span class="pre">True</span></code>).</p></li>
+</ul>
+<p>Regarding the <code class="docutils literal notranslate"><span class="pre">preconditioner</span></code> argument in the class initializer: the default <code class="docutils literal notranslate"><span class="pre">ilu</span></code> option applies an incomplete LU factorization to the sparse matrix, which can significantly speed up convergence for large problems. However, for very large problems, the factorization itself can be computationally expensive and may even fail due to memory constraints. In such cases, it may be better to set the preconditioner to <code class="docutils literal notranslate"><span class="pre">jacobi</span></code> (i.e., diagonal scaling).</p>
+<p>In addition to the above preconditioners, the class supports “rescaled” variants of the default preconditioners, where the sparse matrix is rescaled by the inverse of its diagonal before applying the preconditioner. This is a typically cheap operation that can speed up convergence for some problems. To use the rescaled variants, simply set <code class="docutils literal notranslate"><span class="pre">preconditioner</span></code> to <code class="docutils literal notranslate"><span class="pre">rescaled</span> <span class="pre">ilu</span></code> or <code class="docutils literal notranslate"><span class="pre">rescaled</span> <span class="pre">jacobi</span></code>.</p>
+<p>We can now follow this workflow to set up more meaningful problems and run radiative transfer calculations on them. We will go through some examples in the <a class="reference external" href="examples.html">examples section</a>.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="usage-fluid.html" class="btn btn-neutral float-left" title="3. Fluids (Gas, Dust)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="usage-io.html" class="btn btn-neutral float-right" title="5. Basic IO" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, A. Ziampras.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Troubleshooting &amp; FAQ &mdash; pyFLD 0.4.3 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="pyFLD" href="modules.html" />
+    <link rel="prev" title="Best Practices" href="best-practices.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pyFLD
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="framework.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="framework.html#implementation">Implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best-practices.html">Best Practices</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Troubleshooting &amp; FAQ</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#solver-convergence">Solver &amp; Convergence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#boundary-conditions">Boundary Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#opacities-units">Opacities &amp; Units</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#memory-performance">Memory &amp; Performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#temperature-structure">Temperature Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#frequency-dependent-opacities">Frequency-dependent opacities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#initial-conditions">Initial conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#getting-help">Getting Help</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">pyFLD</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyFLD</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Troubleshooting &amp; FAQ</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/troubleshooting.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="troubleshooting-faq">
+<h1>Troubleshooting &amp; FAQ<a class="headerlink" href="#troubleshooting-faq" title="Permalink to this heading"></a></h1>
+<p>Common issues and solutions.</p>
+<section id="solver-convergence">
+<h2>Solver &amp; Convergence<a class="headerlink" href="#solver-convergence" title="Permalink to this heading"></a></h2>
+<p><strong>Q: Solver doesn’t converge or takes many iterations</strong></p>
+<p>A: Switch to the <code class="docutils literal notranslate"><span class="pre">rescaled</span> <span class="pre">ilu</span></code> preconditioner, which often converges faster:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">FLD</span><span class="o">.</span><span class="n">RadiativeEnvironment</span><span class="p">([</span><span class="n">gas</span><span class="p">],</span> <span class="n">preconditioner</span><span class="o">=</span><span class="s1">&#39;rescaled ilu&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For very large problems (&gt; 10⁸ cells), the ILU preconditioner may be expensive. Try <code class="docutils literal notranslate"><span class="pre">jacobi</span></code> instead:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">FLD</span><span class="o">.</span><span class="n">RadiativeEnvironment</span><span class="p">([</span><span class="n">gas</span><span class="p">],</span> <span class="n">preconditioner</span><span class="o">=</span><span class="s1">&#39;jacobi&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>You can also adjust solver tolerance and iteration limit:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span><span class="o">.</span><span class="n">configure_solver</span><span class="p">(</span><span class="n">rtol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="mi">20000</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Lower tolerance (stricter convergence) slows down the solver. Increase <code class="docutils literal notranslate"><span class="pre">maxiter</span></code> if needed.</p>
+<p><strong>Q: Solution oscillates or is unphysical</strong></p>
+<p>A: Check your boundary conditions. The most common mistake is using the wrong boundary constant names. Use these:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">BOUNDARY_FIXEDVALUE</span>   <span class="c1"># fixed-value boundary</span>
+<span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">BOUNDARY_REFLECTIVE</span>   <span class="c1"># zero-gradient (reflective) boundary</span>
+</pre></div>
+</div>
+<p>Also verify that your opacities are physically reasonable (not negative or extremely large).</p>
+<p><strong>Q: Solver runs but temperature doesn’t change</strong></p>
+<p>A: Likely causes:</p>
+<ol class="arabic simple">
+<li><p><strong>Opacities are zero</strong>: Check that you enrolled the opacity functions correctly. Test with a small constant opacity if unsure.</p></li>
+<li><p><strong>Timestep is too small</strong>: Try increasing the time step in <code class="docutils literal notranslate"><span class="pre">advance()</span></code> to see if the solution evolves.</p></li>
+</ol>
+</section>
+<section id="boundary-conditions">
+<h2>Boundary Conditions<a class="headerlink" href="#boundary-conditions" title="Permalink to this heading"></a></h2>
+<p><strong>Q: What are the six boundary indices?</strong></p>
+<p>A: The order is: <code class="docutils literal notranslate"><span class="pre">[inner_radial,</span> <span class="pre">outer_radial,</span> <span class="pre">inner_polar,</span> <span class="pre">outer_polar,</span> <span class="pre">inner_azimuthal,</span> <span class="pre">outer_azimuthal]</span></code></p>
+<p>In code: <code class="docutils literal notranslate"><span class="pre">bounds</span> <span class="pre">=</span> <span class="pre">[bound_0,</span> <span class="pre">bound_1,</span> <span class="pre">bound_2,</span> <span class="pre">bound_3,</span> <span class="pre">bound_4,</span> <span class="pre">bound_5]</span></code></p>
+<p><strong>Q: Getting boundary error despite calling declare_boundaries()</strong></p>
+<p>A: Make sure you’re calling it <em>before</em> <code class="docutils literal notranslate"><span class="pre">setup()</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># WRONG</span>
+<span class="n">Disk</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>  <span class="c1"># This checks for boundaries</span>
+<span class="n">Disk</span><span class="o">.</span><span class="n">declare_boundaries</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span>
+
+<span class="c1"># CORRECT</span>
+<span class="n">Disk</span><span class="o">.</span><span class="n">declare_boundaries</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span>
+<span class="n">Disk</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="opacities-units">
+<h2>Opacities &amp; Units<a class="headerlink" href="#opacities-units" title="Permalink to this heading"></a></h2>
+<p><strong>Q: Opacity import crashes or gives weird values</strong></p>
+<p>A: Ensure your opacity file is in the correct format. Use <code class="docutils literal notranslate"><span class="pre">fld.tools.parse_optool_file()</span></code> for optool files:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Correct usage</span>
+<span class="n">wl</span><span class="p">,</span> <span class="n">kabs</span><span class="p">,</span> <span class="n">ksca</span><span class="p">,</span> <span class="n">g</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">parse_optool_file</span><span class="p">(</span><span class="s1">&#39;dustkappa_01um.inp&#39;</span><span class="p">)</span>
+
+<span class="c1"># Check shapes and ranges</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;wl shape: </span><span class="si">{</span><span class="n">wl</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, range: </span><span class="si">{</span><span class="n">wl</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">wl</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;kabs shape: </span><span class="si">{</span><span class="n">kabs</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, range: </span><span class="si">{</span><span class="n">kabs</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">kabs</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If values are unexpectedly large or small, double-check the file is not corrupted or in a different format.</p>
+<p><strong>Q: Unit conversion errors when setting density/temperature</strong></p>
+<p>A: Always be explicit about units:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># WRONG – will fail</span>
+<span class="n">gas</span><span class="o">.</span><span class="n">set_density</span><span class="p">(</span><span class="mf">1e-10</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">grid</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+
+<span class="c1"># CORRECT</span>
+<span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
+<span class="n">gas</span><span class="o">.</span><span class="n">set_density</span><span class="p">(</span><span class="mf">1e-10</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">g</span><span class="o">/</span><span class="n">u</span><span class="o">.</span><span class="n">cm</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">grid</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+</pre></div>
+</div>
+<p><strong>Q: Grid coordinates don’t have the right units</strong></p>
+<p>A: Length coordinates (x1, x2, x3 in Cartesian; x1 in cylindrical/spherical) must have units. Angles must be dimensionless in radians:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># CORRECT spherical grid</span>
+<span class="n">ri</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_domain_with_ghosts</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">au</span>
+<span class="n">thi</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_domain_with_ghosts</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>  <span class="c1"># plain radians, no units!</span>
+<span class="n">phii</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_domain_with_ghosts</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># plain radians</span>
+<span class="n">grid</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">Grid</span><span class="p">(</span><span class="n">ri</span><span class="p">,</span> <span class="n">thi</span><span class="p">,</span> <span class="n">phii</span><span class="p">,</span> <span class="n">geometry</span><span class="o">=</span><span class="s1">&#39;spherical&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="memory-performance">
+<h2>Memory &amp; Performance<a class="headerlink" href="#memory-performance" title="Permalink to this heading"></a></h2>
+<p><strong>Q: Out of memory with large grids</strong></p>
+<p>A: The ILU preconditioner builds a factorization which can use significant memory. Solutions:</p>
+<ol class="arabic simple">
+<li><p>Switch to a diagonal preconditioner:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">FLD</span><span class="o">.</span><span class="n">RadiativeEnvironment</span><span class="p">([</span><span class="n">gas</span><span class="p">],</span> <span class="n">preconditioner</span><span class="o">=</span><span class="s1">&#39;jacobi&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Reduce grid resolution (fewer cells)</p></li>
+<li><p>Use a machine with more RAM or run on a cluster</p></li>
+</ol>
+<p><strong>Q: Simulation runs slowly</strong></p>
+<p>A: Profile your bottleneck:</p>
+<ol class="arabic simple">
+<li><p><strong>Solver (most common)</strong>: Try different preconditioners or relax tolerance (<code class="docutils literal notranslate"><span class="pre">rtol</span></code>)</p></li>
+<li><p><strong>Irradiation calculations</strong>: Install <code class="docutils literal notranslate"><span class="pre">numexpr</span></code> for speed: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">numexpr</span></code></p></li>
+<li><p><strong>Hydrostatic equilibrium</strong>: Called infrequently (only when needed), not every step</p></li>
+</ol>
+<p>For large problems, consider:
+- Coarser time steps (larger <code class="docutils literal notranslate"><span class="pre">dt</span></code>)
+- Relaxed convergence criterion (larger <code class="docutils literal notranslate"><span class="pre">rtol</span></code>, e.g., 1e-6 instead of 1e-8)</p>
+<p>You can also use the <code class="docutils literal notranslate"><span class="pre">debug=True</span></code> option in both <code class="docutils literal notranslate"><span class="pre">Gas/Dust</span></code> and <code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment</span></code> to print debugging information which can help pinpoint issues.</p>
+</section>
+<section id="temperature-structure">
+<h2>Temperature Structure<a class="headerlink" href="#temperature-structure" title="Permalink to this heading"></a></h2>
+<p><strong>Q: Disk temperature profile doesn’t look right</strong></p>
+<p>A: Common issues:</p>
+<ol class="arabic simple">
+<li><p><strong>Verify irradiation is on</strong>: If you expect irradiation to dominate but it’s not enabled, temperature will be off. Set <code class="docutils literal notranslate"><span class="pre">irradiation='gray'</span></code> or <code class="docutils literal notranslate"><span class="pre">'freqdep'</span></code>.</p></li>
+<li><p><strong>Incomplete settling to equilibrium</strong>: Run more time steps or for longer simulation time before checking.</p></li>
+</ol>
+</section>
+<section id="frequency-dependent-opacities">
+<h2>Frequency-dependent opacities<a class="headerlink" href="#frequency-dependent-opacities" title="Permalink to this heading"></a></h2>
+<p><strong>Q: Frequency-dependent opacities causing slow simulations</strong></p>
+<p>A: Use fewer wavelength bins in the star’s spectrum. For example, when calling <code class="docutils literal notranslate"><span class="pre">optool</span></code> to create your opacity file, use the format <code class="docutils literal notranslate"><span class="pre">-l</span> <span class="pre">lam_min</span> <span class="pre">lam_max</span> <span class="pre">N_lam</span></code> to specify fewer wavelength points:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">optool</span> <span class="o">-</span><span class="n">radmc</span> <span class="o">-</span><span class="n">l</span> <span class="mf">0.05</span> <span class="mi">10000</span> <span class="mi">60</span>  <span class="c1"># creates opacity file with 60 wavelength points</span>
+</pre></div>
+</div>
+</section>
+<section id="initial-conditions">
+<h2>Initial conditions<a class="headerlink" href="#initial-conditions" title="Permalink to this heading"></a></h2>
+<p><strong>Q: Hydrostatic equilibrium() gives NaNs</strong></p>
+<p>A: Causes:</p>
+<ol class="arabic simple">
+<li><p><strong>Unphysical initial density</strong>: Very steep profiles or negative densities fail. Start with a shallower profile.</p></li>
+<li><p><strong>Missing parameters</strong>: For dust, you must provide <code class="docutils literal notranslate"><span class="pre">rhogas</span></code> and enroll a nonzero <code class="docutils literal notranslate"><span class="pre">alpha</span></code> (turbulent diffusion).</p></li>
+</ol>
+</section>
+<section id="getting-help">
+<h2>Getting Help<a class="headerlink" href="#getting-help" title="Permalink to this heading"></a></h2>
+<p>If you encounter an issue not listed above:</p>
+<ol class="arabic simple">
+<li><p>Check the <a class="reference external" href="framework.html">framework</a> for theoretical background</p></li>
+<li><p>Review complete examples in <a class="reference external" href="examples.html">examples</a></p></li>
+<li><p>Look at the docstrings in the code: <code class="docutils literal notranslate"><span class="pre">help(fld.fluids.Gas)</span></code> in Python</p></li>
+<li><p>Visit the GitHub repository and open an issue</p></li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="best-practices.html" class="btn btn-neutral float-left" title="Best Practices" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="modules.html" class="btn btn-neutral float-right" title="pyFLD" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, A. Ziampras.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

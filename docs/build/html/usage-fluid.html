@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3. Fluids (Gas, Dust) &mdash; pyFLD 0.4.3 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="4. Radiative environment" href="usage-FLD.html" />
+    <link rel="prev" title="2. the Star class" href="usage-star.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pyFLD
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="framework.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="framework.html#implementation">Implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="usage.html">Usage</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="usage.html#importing-the-package">Importing the package</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="usage-tools.html">0. Various tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-grid.html">1. the Grid class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-star.html">2. the Star class</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">3. Fluids (Gas, Dust)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="usage-FLD.html">4. Radiative environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-io.html">5. Basic IO</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-radmc_helper.html">6. RADMC-3D integration</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best-practices.html">Best Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting &amp; FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">pyFLD</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyFLD</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="usage.html">Usage</a></li>
+      <li class="breadcrumb-item active">3. Fluids (Gas, Dust)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/usage-fluid.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fluids-gas-dust">
+<h1>3. Fluids (Gas, Dust)<a class="headerlink" href="#fluids-gas-dust" title="Permalink to this heading"></a></h1>
+<p>After initializing the grid and star, we can declare one or more fluid objects. <code class="docutils literal notranslate"><span class="pre">pyFLD</span></code> currently supports two branches of the <code class="docutils literal notranslate"><span class="pre">RadiativeFluid</span></code> class, for gas and dust, initialized very similarly with the following call signature:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fld</span><span class="o">.</span><span class="n">fluids</span><span class="o">.</span><span class="n">Gas</span><span class="o">/</span><span class="n">Dust</span><span class="p">(</span>
+    <span class="c1"># inherited from GenericFluid</span>
+    <span class="n">grid</span><span class="p">:</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">Grid</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">star</span><span class="p">:</span> <span class="n">fld</span><span class="o">.</span><span class="n">star</span><span class="o">.</span><span class="n">Star</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">mu</span><span class="o">=</span><span class="mf">2.353</span><span class="p">,</span>
+    <span class="n">gamma</span><span class="o">=</span><span class="mf">1.4</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+
+    <span class="c1"># inherited from RadiativeFluid</span>
+    <span class="n">viscosity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">irradiation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">kabs_wl</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">ksca_wl</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">g_wl</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">build_mean_opacities</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+
+    <span class="c1"># Gas has no specific parameters</span>
+
+    <span class="c1"># specific to Dust branch</span>
+    <span class="n">grain_rho</span><span class="o">=&lt;</span><span class="n">Quantity</span> <span class="mf">1.</span> <span class="n">g</span> <span class="o">/</span> <span class="n">cm3</span><span class="o">&gt;</span><span class="p">,</span>
+    <span class="n">grain_size</span><span class="o">=&lt;</span><span class="n">Quantity</span> <span class="mf">1.</span> <span class="n">um</span><span class="o">&gt;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">grid</span></code> and <code class="docutils literal notranslate"><span class="pre">star</span></code> arguments are basically mandatory. Most other arguments have default values that are sufficient for most use cases, but you can customize them as needed. In particular:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">viscosity</span></code>: toggle whether this fluid contributes to viscous heating</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">irradiation</span></code>: toggle whether this fluid contributes to the optical depth via ray-tracing and the resulting irradiation heating. When not set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, can be set to <code class="docutils literal notranslate"><span class="pre">gray</span></code> or <code class="docutils literal notranslate"><span class="pre">freqdep</span></code> for gray or frequency-dependent opacities, respectively. Using <code class="docutils literal notranslate"><span class="pre">freqdep</span></code> requires the additional arguments <code class="docutils literal notranslate"><span class="pre">kabs_wl</span></code>, <code class="docutils literal notranslate"><span class="pre">ksca_wl</span></code>, and <code class="docutils literal notranslate"><span class="pre">g_wl</span></code> (absorption opacity, scattering opacity, and scattering asymmetry parameter as a function of wavelength, respectively). These 3 arrays must match the wavelength grid of the star’s spectrum (i.e., the <code class="docutils literal notranslate"><span class="pre">wl</span></code> argument passed to the <code class="docutils literal notranslate"><span class="pre">Star</span></code> initializer).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">build_mean_opacities</span></code>: if <code class="docutils literal notranslate"><span class="pre">True</span></code>, and a frequency-dependent opacity model is used, the class will automatically compute the Rosseland and Planck mean opacities for use in the diffusion solver. Otherwise, the mean opacities must be provided by the user (see below). It is recommended to leave this as <code class="docutils literal notranslate"><span class="pre">True</span></code> for consistency.</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">Gas</span></code> branch has no specific parameters, but the <code class="docutils literal notranslate"><span class="pre">Dust</span></code> branch requires the grain internal density <code class="docutils literal notranslate"><span class="pre">grain_rho</span></code> and grain size <code class="docutils literal notranslate"><span class="pre">grain_size</span></code> to account for dust settling in the vertical direction.</p>
+<p>For example, a simple initialization of a <code class="docutils literal notranslate"><span class="pre">Gas</span></code> fluid that includes both viscous and irradiation heating would look like:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">gas</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">fluids</span><span class="o">.</span><span class="n">Gas</span><span class="p">(</span>
+    <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span>
+    <span class="n">star</span><span class="o">=</span><span class="n">star</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;basic&#39;</span><span class="p">,</span>
+    <span class="n">viscosity</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">irradiation</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>We now have access to various methods within the <code class="docutils literal notranslate"><span class="pre">Gas</span></code> object that we can use to flesh out the properties of the fluid, namely:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">gas.set_density(rho)</span></code>: set the density array (must be 3D and match the grid dimensions, including ghost cells). Example: <code class="docutils literal notranslate"><span class="pre">gas.set_density(1e-10</span> <span class="pre">*</span> <span class="pre">u.g</span> <span class="pre">/</span> <span class="pre">u.cm**3</span> <span class="pre">*</span> <span class="pre">np.ones(grid.shape))</span></code> for a uniform density of 10^-10 g/cm^3.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gas.set_temperature(T)</span></code>: set the temperature array (same requirements as density)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gas.enroll_alpha(func)</span></code>: enrolls a user-defined function that takes the fluid object as its only argument and returns the Shakura–Sunyaev α viscosity parameter (e.g., <code class="docutils literal notranslate"><span class="pre">gas.enroll_alpha(lambda</span> <span class="pre">f:</span> <span class="pre">0.01)</span></code> for a constant α of 0.01)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gas.enroll_kappaR(func)</span></code>, <code class="docutils literal notranslate"><span class="pre">gas.enroll_kappaP(func)</span></code>, and <code class="docutils literal notranslate"><span class="pre">gas.enroll_kappaPstar(func)</span></code>: similarly used to enroll user-defined functions for the Rosseland and Planck mean opacities, and the Planck mean opacity at the stellar spectrum, respectively.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gas.enroll_tau0(func)</span></code>: enrolls a function that returns the gray optical depth between the stellar surface and the inner radial boundary of the grid. Required when <code class="docutils literal notranslate"><span class="pre">irradiation='gray'</span></code>. See also <code class="docutils literal notranslate"><span class="pre">fld.tools.get_tau0_Flock_2019</span></code> for a ready-made prescription.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gas.enroll_col0(func)</span></code>: similar to <code class="docutils literal notranslate"><span class="pre">enroll_tau0</span></code>, but for frequency-dependent irradiation (<code class="docutils literal notranslate"><span class="pre">irradiation='freqdep'</span></code>). This function should return the column density from the stellar surface to the inner radial boundary of the grid. See also <code class="docutils literal notranslate"><span class="pre">fld.tools.get_col0_Flock_2019</span></code>.</p></li>
+</ul>
+<p>All enrolled functions receive the fluid object itself as their only argument, which gives access to all current fluid properties. Their getter counterparts (e.g., <code class="docutils literal notranslate"><span class="pre">gas.get_kappaR(gas)</span></code>, <code class="docutils literal notranslate"><span class="pre">gas.get_col0(gas)</span></code>) follow the same convention and are called with the fluid passed as the argument. For example, a Planck opacity that depends on temperature would look like:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Gas</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">fluids</span><span class="o">.</span><span class="n">Gas</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">kappaP_func</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">tmp</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s1">&#39;K&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mf">0.02</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">cm</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="n">u</span><span class="o">.</span><span class="n">g</span> <span class="o">*</span> <span class="n">T</span> <span class="o">**</span> <span class="mi">2</span>
+
+<span class="n">Gas</span><span class="o">.</span><span class="n">enroll_kappaP</span><span class="p">(</span><span class="n">kappaP_func</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>After setting up the properties of the fluid and enrolling any necessary functions, you can set up the class with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">gas</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Finally, both <code class="docutils literal notranslate"><span class="pre">Gas</span></code> and <code class="docutils literal notranslate"><span class="pre">Dust</span></code> branches include a method that recomputes the vertical structure of the fluid under the assumption of hydrostatic equilibrium, which is useful when constructing self-consistent initial conditions for protoplanetary disks:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">gas</span><span class="o">.</span><span class="n">compute_hydrostatic_equilibrium</span><span class="p">()</span>
+<span class="n">dust</span><span class="o">.</span><span class="n">compute_hydrostatic_equilibrium</span><span class="p">(</span><span class="n">rhogas</span><span class="o">=</span><span class="n">gas</span><span class="o">.</span><span class="n">rho</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here is where the two branches differ: the <code class="docutils literal notranslate"><span class="pre">Gas</span></code> branch accounts for radial and vertical pressure support, while the <code class="docutils literal notranslate"><span class="pre">Dust</span></code> branch accounts for settling balanced by vertical turbulent diffusion. The latter requires knowing the Stokes number of the dust, which in turn requires a grain size, grain density, and the background gas density (hence the <code class="docutils literal notranslate"><span class="pre">rhogas</span></code> argument). Note that in this case, a <code class="docutils literal notranslate"><span class="pre">Dust</span></code> object must include a nonzero turbulent α via <code class="docutils literal notranslate"><span class="pre">enroll_alpha</span></code>, even if the user sets <code class="docutils literal notranslate"><span class="pre">viscosity=False</span></code> (i.e., no viscous heating).</p>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">compute_hydrostatic_equilibrium</span></code> does not update the density array in place, but rather returns a new array with the updated density structure. The user can simply capture the output as <code class="docutils literal notranslate"><span class="pre">gas.rho</span> <span class="pre">=</span> <span class="pre">...</span></code>, but as these classes are designed to be passed to the radiative transfer solver, this is typically not necessary as the solver will handle these updates internally as needed.</p>
+<p>We have now set up all the ingredients for the radiative transfer calculations, which we will cover in the <a class="reference external" href="usage-FLD.html">next section</a>.</p>
+<section id="notes">
+<h2>Notes<a class="headerlink" href="#notes" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p>When using frequency-dependent irradiation, the user must provide the absorption and scattering opacities, and scattering asymmetry parameter, as a function of wavelength, even though only the absorption opacity is used to compute the irradiation heating. In that case, you can simply pass zero-valued arrays for the scattering opacity and asymmetry parameter.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="usage-star.html" class="btn btn-neutral float-left" title="2. the Star class" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="usage-FLD.html" class="btn btn-neutral float-right" title="4. Radiative environment" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, A. Ziampras.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Best Practices &mdash; pyFLD 0.4.3 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Troubleshooting &amp; FAQ" href="troubleshooting.html" />
+    <link rel="prev" title="Advanced example: protoplanetary disk" href="example-advanced.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pyFLD
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="framework.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="framework.html#implementation">Implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Best Practices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#choosing-the-right-grid-resolution">Choosing the right grid resolution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#gray-vs-frequency-dependent-opacities">Gray vs. frequency-dependent opacities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#wavelength-grid-for-frequency-dependent-opacities">Wavelength grid for frequency-dependent opacities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#solver-configuration">Solver configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#boundary-conditions">Boundary conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#time-stepping">Time stepping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#opacity-functions">Opacity functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#viscosity">Viscosity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#irradiation">Irradiation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#hydrostatic-equilibrium">Hydrostatic equilibrium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#validation-testing">Validation &amp; testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#performance-monitoring">Performance monitoring</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting &amp; FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">pyFLD</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyFLD</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Best Practices</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/best-practices.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="best-practices">
+<h1>Best Practices<a class="headerlink" href="#best-practices" title="Permalink to this heading"></a></h1>
+<p>Recommendations for getting the most out of <strong>pyFLD</strong>.</p>
+<section id="choosing-the-right-grid-resolution">
+<h2>Choosing the right grid resolution<a class="headerlink" href="#choosing-the-right-grid-resolution" title="Permalink to this heading"></a></h2>
+<p><strong>Rule of thumb:</strong> Start coarse, refine until results converge.</p>
+<ul class="simple">
+<li><p><strong>Radial resolution</strong>: 64–256 cells for protoplanetary disks. More for steep features (e.g., snow lines, opacity gaps).</p></li>
+<li><p><strong>Vertical resolution</strong>: 32–128 cells. More if you care about disk structure near the midplane or the photosphere.</p></li>
+<li><p><strong>Azimuthal resolution</strong>: 1 cell for axisymmetric; 64–512 for typical non-axisymmetric structures.</p></li>
+</ul>
+<p>Always use logarithmic spacing in radius (and when appropriate, in other directions):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ri</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_domain_with_ghosts</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">au</span>
+</pre></div>
+</div>
+</section>
+<section id="gray-vs-frequency-dependent-opacities">
+<h2>Gray vs. frequency-dependent opacities<a class="headerlink" href="#gray-vs-frequency-dependent-opacities" title="Permalink to this heading"></a></h2>
+<p><strong>Use gray opacities when:</strong></p>
+<ul class="simple">
+<li><p>You want quick estimates</p></li>
+<li><p>Dust composition is uniform or mean properties suffice</p></li>
+<li><p>Computational cost is critical</p></li>
+<li><p>Wavelength-dependent properties don’t strongly affect temperature</p></li>
+</ul>
+<p><strong>Use frequency-dependent opacities when:</strong></p>
+<ul class="simple">
+<li><p>You want accurate temperature structure, especially for dust</p></li>
+<li><p>Dust opacity has strong features (e.g., silicate, ice, graphite absorption)</p></li>
+<li><p>Irradiation wavelength dependence matters for your problem</p></li>
+</ul>
+</section>
+<section id="wavelength-grid-for-frequency-dependent-opacities">
+<h2>Wavelength grid for frequency-dependent opacities<a class="headerlink" href="#wavelength-grid-for-frequency-dependent-opacities" title="Permalink to this heading"></a></h2>
+<p><strong>Resolution matters:</strong></p>
+<ul class="simple">
+<li><p>Too few bins (~10): Mean opacities poorly estimated; misses absorption features</p></li>
+<li><p>Sweet spot (~50–100): Good accuracy and reasonable speed</p></li>
+<li><p>Too many (~1000): Slow, diminishing returns</p></li>
+</ul>
+</section>
+<section id="solver-configuration">
+<h2>Solver configuration<a class="headerlink" href="#solver-configuration" title="Permalink to this heading"></a></h2>
+<p><strong>Default settings</strong> (usually fine):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">FLD</span><span class="o">.</span><span class="n">RadiativeEnvironment</span><span class="p">([</span><span class="n">gas</span><span class="p">],</span> <span class="n">preconditioner</span><span class="o">=</span><span class="s1">&#39;ilu&#39;</span><span class="p">)</span>
+<span class="n">Disk</span><span class="o">.</span><span class="n">configure_solver</span><span class="p">(</span><span class="n">solver</span><span class="o">=</span><span class="s1">&#39;bicgstab&#39;</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="mi">10000</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>For faster convergence</strong> (at cost of potentially lower accuracy):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span><span class="o">.</span><span class="n">configure_solver</span><span class="p">(</span><span class="n">rtol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>For very large problems</strong> (<span class="math notranslate nohighlight">\(&gt; 10^8\)</span> cells):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">FLD</span><span class="o">.</span><span class="n">RadiativeEnvironment</span><span class="p">([</span><span class="n">gas</span><span class="p">],</span> <span class="n">preconditioner</span><span class="o">=</span><span class="s1">&#39;rescaled jacobi&#39;</span><span class="p">)</span> <span class="c1"># or &#39;rescaled ilu&#39; if memory allows</span>
+<span class="n">Disk</span><span class="o">.</span><span class="n">configure_solver</span><span class="p">(</span><span class="n">rtol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>To speed up multiple ``advance()`` calls</strong> (e.g., time evolution):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span><span class="o">.</span><span class="n">configure_solver</span><span class="p">(</span><span class="n">guess</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># Use previous solution as initial guess</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>
+    <span class="n">Disk</span><span class="o">.</span><span class="n">advance</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mf">1e5</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">yr</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="boundary-conditions">
+<h2>Boundary conditions<a class="headerlink" href="#boundary-conditions" title="Permalink to this heading"></a></h2>
+<p><strong>For disk models (spherical geometry):</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Typical: fixed T at all boundaries (radiative equilibrium)</span>
+<span class="n">T_bc</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">K</span>  <span class="c1"># Outer boundary temperature</span>
+<span class="n">bounds</span> <span class="o">=</span> <span class="p">[</span><span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">BOUNDARY_FIXEDVALUE</span><span class="p">]</span> <span class="o">*</span> <span class="mi">6</span>
+<span class="n">vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">fld</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">T_to_Er</span><span class="p">(</span><span class="n">T_bc</span><span class="p">)]</span> <span class="o">*</span> <span class="mi">6</span>
+
+<span class="c1"># Keep midplane reflective if computing its vertical structure from irradiation</span>
+<span class="n">bounds</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">BOUNDARY_REFLECTIVE</span> <span class="c1"># the value is ignored when reflective</span>
+
+<span class="n">Disk</span><span class="o">.</span><span class="n">declare_boundaries</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="time-stepping">
+<h2>Time stepping<a class="headerlink" href="#time-stepping" title="Permalink to this heading"></a></h2>
+<p><strong>Choosing time step dt:</strong></p>
+<p>FLD is implicit, so large time steps are stable (unlike explicit methods). However:</p>
+<ul class="simple">
+<li><p><strong>Too small</strong>: Wastes computation time</p></li>
+<li><p><strong>Too large</strong>: May not resolve fast transients; convergence slower</p></li>
+</ul>
+<p>Start with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dt</span> <span class="o">=</span> <span class="p">(</span><span class="n">L</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="n">D</span><span class="p">)</span>  <span class="c1"># Characteristic diffusion time</span>
+<span class="c1"># where L is domain size, D = lambda*c/(kappa*rho) is diffusion coefficient</span>
+</pre></div>
+</div>
+<p>For a disk at 1 AU with typical parameters, try <code class="docutils literal notranslate"><span class="pre">dt</span></code><span class="math notranslate nohighlight">\(\sim 10^6-10^7\,\mathrm{yr}\)</span> and adjust.</p>
+</section>
+<section id="opacity-functions">
+<h2>Opacity functions<a class="headerlink" href="#opacity-functions" title="Permalink to this heading"></a></h2>
+<p><strong>Constant opacity</strong> (simplest for testing):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Gas</span><span class="o">.</span><span class="n">enroll_kappaR</span><span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">cm</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">u</span><span class="o">.</span><span class="n">g</span><span class="p">)</span>
+<span class="n">Gas</span><span class="o">.</span><span class="n">enroll_kappaP</span><span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">cm</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">u</span><span class="o">.</span><span class="n">g</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Temperature-dependent opacity</strong> (more realistic):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">opacity_P</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">tmp</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s1">&#39;K&#39;</span><span class="p">)</span>
+    <span class="c1"># Simplified power law: kappa propto T^2 (example)</span>
+    <span class="k">return</span> <span class="mf">1e-4</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">cm</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">u</span><span class="o">.</span><span class="n">g</span> <span class="o">*</span> <span class="p">(</span><span class="n">T</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+
+<span class="n">Gas</span><span class="o">.</span><span class="n">enroll_kappaP</span><span class="p">(</span><span class="n">opacity_P</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Automatic from frequency-dependent data</strong> (recommended):</p>
+<p>When using frequency-dependent opacities with <code class="docutils literal notranslate"><span class="pre">build_mean_opacities=True</span></code> (default), Rosseland and Planck means are computed automatically. No need to enroll them.</p>
+</section>
+<section id="viscosity">
+<h2>Viscosity<a class="headerlink" href="#viscosity" title="Permalink to this heading"></a></h2>
+<p><strong>When to include:</strong></p>
+<ul class="simple">
+<li><p>Standard α-viscosity in protoplanetary disks</p></li>
+<li><p>Studying viscous heating effects</p></li>
+<li><p>Modeling accretion</p></li>
+</ul>
+<p><strong>Simple constant α:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Gas</span><span class="o">.</span><span class="n">enroll_alpha</span><span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="mf">1e-4</span><span class="p">)</span>  <span class="c1"># Shakura-Sunyaev alpha</span>
+</pre></div>
+</div>
+<p><strong>variable α</strong> (e.g., α(T) from Cecil &amp; Flock 2024):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Gas</span><span class="o">.</span><span class="n">enroll_alpha</span><span class="p">(</span><span class="n">fld</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">get_alpha_Cecil_Flock_2024</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Dust without viscous heating</strong> (but with turbulent diffusion):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Dust</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">fluids</span><span class="o">.</span><span class="n">Dust</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">viscosity</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">Dust</span><span class="o">.</span><span class="n">enroll_alpha</span><span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">)</span>  <span class="c1"># For settling, not heating</span>
+</pre></div>
+</div>
+</section>
+<section id="irradiation">
+<h2>Irradiation<a class="headerlink" href="#irradiation" title="Permalink to this heading"></a></h2>
+<p><strong>Initial setup:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Gray irradiation: must enroll tau0 function</span>
+<span class="n">Gas</span><span class="o">.</span><span class="n">enroll_tau0</span><span class="p">(</span><span class="n">fld</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">get_tau0_Flock_2019</span><span class="p">)</span>
+
+<span class="c1"># Frequency-dependent: must enroll col0 function</span>
+<span class="n">Dust</span><span class="o">.</span><span class="n">enroll_col0</span><span class="p">(</span><span class="n">fld</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">get_col0_Flock_2019</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Check irradiation is enabled:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">Gas</span><span class="o">.</span><span class="n">irradiation</span><span class="p">)</span>  <span class="c1"># Should print &#39;gray&#39; or &#39;freqdep&#39;, not False</span>
+</pre></div>
+</div>
+<p><strong>Avoid common mistakes:</strong></p>
+<ul class="simple">
+<li><p>Do not forget to enroll <code class="docutils literal notranslate"><span class="pre">tau0</span></code> (gray) or <code class="docutils literal notranslate"><span class="pre">col0</span></code> (freqdep)</p></li>
+<li><p>Ensure wavelength arrays match between Star and Dust</p></li>
+<li><p>For frequency-dependent, provide absorption opacity (scattering can be zeros if not needed)</p></li>
+</ul>
+</section>
+<section id="hydrostatic-equilibrium">
+<h2>Hydrostatic equilibrium<a class="headerlink" href="#hydrostatic-equilibrium" title="Permalink to this heading"></a></h2>
+<p><strong>When to use:</strong></p>
+<p>For self-consistent disk structure (gas pressure support, dust settling), especially with multiple species.</p>
+<p><strong>Best practice workflow:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Initial setup</span>
+<span class="n">Disk</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">FLD</span><span class="o">.</span><span class="n">RadiativeEnvironment</span><span class="p">([</span><span class="n">Gas</span><span class="p">,</span> <span class="n">Dust</span><span class="p">])</span>
+<span class="n">Disk</span><span class="o">.</span><span class="n">declare_boundaries</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span>
+
+<span class="c1"># Solve to target temperature profile (here, to equilibrium)</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">50</span><span class="p">):</span>
+    <span class="n">Disk</span><span class="o">.</span><span class="n">advance</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mf">1e8</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">yr</span><span class="p">)</span>
+
+<span class="c1"># Update density to satisfy hydrostatic equilibrium</span>
+<span class="n">Disk</span><span class="o">.</span><span class="n">enforce_hydrostatic_equilibrium</span><span class="p">()</span>
+
+<span class="c1"># Continue with refined calculation (T will adjust)</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>
+    <span class="n">Disk</span><span class="o">.</span><span class="n">advance</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mf">1e8</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">yr</span><span class="p">)</span>
+
+<span class="c1"># Update HSE periodically if needed</span>
+<span class="k">for</span> <span class="n">cycle</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">):</span>
+        <span class="n">Disk</span><span class="o">.</span><span class="n">advance</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mf">1e8</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">yr</span><span class="p">)</span>
+    <span class="n">Disk</span><span class="o">.</span><span class="n">enforce_hydrostatic_equilibrium</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="validation-testing">
+<h2>Validation &amp; testing<a class="headerlink" href="#validation-testing" title="Permalink to this heading"></a></h2>
+<p><strong>Analytic benchmarks:</strong></p>
+<p>Test against known solutions before tackling complex models:</p>
+<p>Example: <strong>1D diffusion</strong> — Linear temperature profile (see <cite>example-basic</cite>)</p>
+<p><strong>Convergence studies:</strong></p>
+<p>Run with different resolutions and check results converge:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">Nx</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">256</span><span class="p">]:</span>
+    <span class="n">grid</span> <span class="o">=</span> <span class="n">setup_grid</span><span class="p">(</span><span class="n">Nx</span><span class="o">=</span><span class="n">Nx</span><span class="p">)</span>
+    <span class="n">Disk</span> <span class="o">=</span> <span class="n">setup_model</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
+    <span class="n">Disk</span><span class="o">.</span><span class="n">advance</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mf">1e8</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">year</span><span class="p">)</span>
+    <span class="n">T_mid</span> <span class="o">=</span> <span class="n">Disk</span><span class="o">.</span><span class="n">tmp</span><span class="p">[</span><span class="o">...</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Nx=</span><span class="si">{</span><span class="n">Nx</span><span class="si">}</span><span class="s2">: T_mid(r=10au) = </span><span class="si">{</span><span class="n">T_mid</span><span class="p">[</span><span class="o">...</span><span class="p">]</span><span class="si">}</span><span class="s2"> K&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="performance-monitoring">
+<h2>Performance monitoring<a class="headerlink" href="#performance-monitoring" title="Permalink to this heading"></a></h2>
+<p><strong>Check solver performance:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># Print solver iterations</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+    <span class="n">Disk</span><span class="o">.</span><span class="n">advance</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mf">1e6</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">yr</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: iters=</span><span class="si">{</span><span class="n">Disk</span><span class="o">.</span><span class="n">iters</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Profile the code</strong> using the <code class="docutils literal notranslate"><span class="pre">debug</span></code> flag to identify bottlenecks:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Gas</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">fluids</span><span class="o">.</span><span class="n">Gas</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">Disk</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">FLD</span><span class="o">.</span><span class="n">RadiativeEnvironment</span><span class="p">([</span><span class="n">Gas</span><span class="p">],</span> <span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">Disk</span><span class="o">.</span><span class="n">advance</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mf">1e6</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">yr</span><span class="p">)</span> <span class="c1"># will print progress info</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="example-advanced.html" class="btn btn-neutral float-left" title="Advanced example: protoplanetary disk" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="troubleshooting.html" class="btn btn-neutral float-right" title="Troubleshooting &amp; FAQ" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, A. Ziampras.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

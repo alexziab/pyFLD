@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>1. the Grid class &mdash; pyFLD 0.4.3 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="2. the Star class" href="usage-star.html" />
+    <link rel="prev" title="0. Various tools" href="usage-tools.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pyFLD
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="framework.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="framework.html#implementation">Implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="usage.html">Usage</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="usage.html#importing-the-package">Importing the package</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="usage-tools.html">0. Various tools</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">1. the Grid class</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="usage-star.html">2. the Star class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-fluid.html">3. Fluids (Gas, Dust)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-FLD.html">4. Radiative environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-io.html">5. Basic IO</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-radmc_helper.html">6. RADMC-3D integration</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best-practices.html">Best Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting &amp; FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">pyFLD</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyFLD</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="usage.html">Usage</a></li>
+      <li class="breadcrumb-item active">1. the Grid class</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/usage-grid.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="the-grid-class">
+<h1>1. the Grid class<a class="headerlink" href="#the-grid-class" title="Permalink to this heading"></a></h1>
+<p>All calculations in <code class="docutils literal notranslate"><span class="pre">pyFLD</span></code> are performed on a grid, which is represented by the <code class="docutils literal notranslate"><span class="pre">Grid</span></code> class. The class can handle up to 3D grids in Cartesian, cylindrical, or spherical coordinates, and is initialized with 3 arrays representing the cell <strong>interfaces</strong> in each dimension. Its call signature is:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">Grid</span><span class="p">(</span><span class="n">x1i</span><span class="p">,</span> <span class="n">x2i</span><span class="p">,</span> <span class="n">x3i</span><span class="p">,</span>
+              <span class="n">nghost</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+              <span class="n">geometry</span><span class="o">=</span><span class="s1">&#39;cartesian&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The provided arrays must already include “ghost” cells, which are used to handle boundary conditions. At least 2 ghost cells are required in either side of each dimension, and the number of ghost cells must be the same in all dimensions. To help with this, the package provides a helper function to construct 1D arrays of cell interfaces with ghost cells included:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">xi</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_domain_with_ghosts</span><span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span>
+                                     <span class="n">Nx</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+                                     <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                     <span class="n">nghost</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The above function constructs a 1D array of cell interfaces from <code class="docutils literal notranslate"><span class="pre">xmin</span></code> to <code class="docutils literal notranslate"><span class="pre">xmax</span></code> with <code class="docutils literal notranslate"><span class="pre">Nx</span></code> cells, and then adds <code class="docutils literal notranslate"><span class="pre">nghost</span></code> ghost cells on either side while maintaining the same cell spacing, which can be either linear (default) or logarithmic (if <code class="docutils literal notranslate"><span class="pre">log=True</span></code>). For example, in a 1D Cartesian setup with a domain from 1 to 10 cm and 100 cells, a typical grid initialization would look like:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyFLD</span> <span class="k">as</span> <span class="nn">fld</span>
+<span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
+
+<span class="c1"># Construct the grid</span>
+<span class="n">xi</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_domain_with_ghosts</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">cm</span>
+<span class="n">yi</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_domain_with_ghosts</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">cm</span>
+<span class="n">zi</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_domain_with_ghosts</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">cm</span>
+<span class="n">grid</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">Grid</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">yi</span><span class="p">,</span> <span class="n">zi</span><span class="p">,</span> <span class="n">geometry</span><span class="o">=</span><span class="s1">&#39;cartesian&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Notice that the returned arrays from <code class="docutils literal notranslate"><span class="pre">get_domain_with_ghosts</span></code> are multiplied by the appropriate units before being passed to the <code class="docutils literal notranslate"><span class="pre">Grid</span></code> initializer. This is required as it ensures that unit conversions are handled correctly in all subsequent calculations.</p>
+<p>The resulting <code class="docutils literal notranslate"><span class="pre">Grid</span></code> object contains various attributes that are used in the calculations, such as the cell centers, cell volumes, and cell face areas, all of which are returned as <code class="docutils literal notranslate"><span class="pre">astropy.Quantity</span></code> objects with appropriate units. Inspired by the <code class="docutils literal notranslate"><span class="pre">PLUTO</span></code> code, the grid direction labels are <code class="docutils literal notranslate"><span class="pre">x1</span></code>, <code class="docutils literal notranslate"><span class="pre">x2</span></code>, and <code class="docutils literal notranslate"><span class="pre">x3</span></code>, with corresponding index labels <code class="docutils literal notranslate"><span class="pre">i</span></code>, <code class="docutils literal notranslate"><span class="pre">j</span></code>, and <code class="docutils literal notranslate"><span class="pre">k</span></code>, stored in C order (i.e., <code class="docutils literal notranslate"><span class="pre">i</span></code> is the fastest running index). Some examples:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">NX1</span></code>: number of cells in the <code class="docutils literal notranslate"><span class="pre">x1</span></code> direction (excluding ghost cells)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">NX1_TOT</span></code>: total number of cells in the <code class="docutils literal notranslate"><span class="pre">x1</span></code> direction (including ghost cells)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">x1</span></code>: 1D array of cell centers in the <code class="docutils literal notranslate"><span class="pre">x1</span></code> direction (<code class="docutils literal notranslate"><span class="pre">NX1_TOT</span></code> elements)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">x3i</span></code>: 1D array of cell interfaces in the <code class="docutils literal notranslate"><span class="pre">x3</span></code> direction (<code class="docutils literal notranslate"><span class="pre">NX3_TOT+1</span></code> elements)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dx2</span></code>: 1D array of cell widths in the <code class="docutils literal notranslate"><span class="pre">x2</span></code> direction (<code class="docutils literal notranslate"><span class="pre">NX2_TOT</span></code> elements)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dV</span></code>: 3D array of cell volumes (<code class="docutils literal notranslate"><span class="pre">NX3_TOT</span></code> x <code class="docutils literal notranslate"><span class="pre">NX2_TOT</span></code> x <code class="docutils literal notranslate"><span class="pre">NX1_TOT</span></code> elements)</p></li>
+</ul>
+<p>The class also contains some helper slices and indices to help with using the grid arrays, such as:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">x1[grid.act1]</span></code>: 1D array of active cell centers in the <code class="docutils literal notranslate"><span class="pre">x1</span></code> direction (<code class="docutils literal notranslate"><span class="pre">NX1</span></code> elements)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">x2[grid.jbeg]</span></code>: center of the first active cell in the <code class="docutils literal notranslate"><span class="pre">x2</span></code> direction (<code class="docutils literal notranslate"><span class="pre">float</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">x3[grid.kend]</span></code>: center of the last active cell in the <code class="docutils literal notranslate"><span class="pre">x3</span></code> direction (<code class="docutils literal notranslate"><span class="pre">float</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dV[grid.active]</span></code>: 3D array of active cell volumes (<code class="docutils literal notranslate"><span class="pre">NX3</span></code> x <code class="docutils literal notranslate"><span class="pre">NX2</span></code> x <code class="docutils literal notranslate"><span class="pre">NX1</span></code> elements, equivalent to <code class="docutils literal notranslate"><span class="pre">dV[grid.kbeg:grid.kend+1,</span> <span class="pre">grid.jbeg:grid.jend+1,</span> <span class="pre">grid.ibeg:grid.iend+1]</span></code>)</p></li>
+</ul>
+<p>You can now hold on to that <code class="docutils literal notranslate"><span class="pre">Grid</span></code> object, as it’s one of the ingredients for the radiative transfer calculations. The next step is to initialize a <a class="reference external" href="usage-star.html">star object</a>.</p>
+<section id="notes">
+<h2>Notes<a class="headerlink" href="#notes" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p>In curvilinear geometries, angle-related arrays (i.e., <em>θ</em>, <em>φ</em>) should <em>not</em> be defined as <code class="docutils literal notranslate"><span class="pre">astropy.Quantity</span></code> objects, but rather as plain floats in radians. Keeping angles dimensionless simplifies many calculations involving surface areas, volumes, etc. <code class="docutils literal notranslate"><span class="pre">pyFLD</span></code> will internally strip units from angle-related inputs that are passed as <code class="docutils literal notranslate"><span class="pre">astropy.Quantity</span></code> objects during grid initialization.</p></li>
+<li><p>Unless you know what you are doing, do not mix slices or indices from different directions (e.g., avoid using <code class="docutils literal notranslate"><span class="pre">x1[grid.act2]</span></code>, <code class="docutils literal notranslate"><span class="pre">dx2[grid.kbeg]</span></code>, etc.).</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="usage-tools.html" class="btn btn-neutral float-left" title="0. Various tools" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="usage-star.html" class="btn btn-neutral float-right" title="2. the Star class" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, A. Ziampras.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

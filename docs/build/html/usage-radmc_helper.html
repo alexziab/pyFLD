@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>6. RADMC-3D integration &mdash; pyFLD 0.4.3 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Examples" href="examples.html" />
+    <link rel="prev" title="5. Basic IO" href="usage-io.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pyFLD
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="framework.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="framework.html#implementation">Implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="usage.html">Usage</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="usage.html#importing-the-package">Importing the package</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="usage-tools.html">0. Various tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-grid.html">1. the Grid class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-star.html">2. the Star class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-fluid.html">3. Fluids (Gas, Dust)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-FLD.html">4. Radiative environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-io.html">5. Basic IO</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">6. RADMC-3D integration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#workflow">Workflow</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#notes">Notes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See Also</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best-practices.html">Best Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting &amp; FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">pyFLD</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyFLD</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="usage.html">Usage</a></li>
+      <li class="breadcrumb-item active">6. RADMC-3D integration</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/usage-radmc_helper.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="radmc-3d-integration">
+<h1>6. RADMC-3D integration<a class="headerlink" href="#radmc-3d-integration" title="Permalink to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">fld.radmc_helper</span></code> module provides a bridge between <code class="docutils literal notranslate"><span class="pre">pyFLD</span></code> and the <a class="reference external" href="https://www.github.com/dullemond/radmc3d-2.0">RADMC-3D</a> radiative transfer code. It allows you to export <code class="docutils literal notranslate"><span class="pre">pyFLD</span></code> grids, stars, and data to RADMC-3D format, and import RADMC-3D results back.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
+<p>RADMC-3D (Dullemond et al., 2012) is a full radiative transfer solver that computes detailed spectral energy distributions and images using a Monte Carlo approach. <code class="docutils literal notranslate"><span class="pre">pyFLD</span></code> provides fast temperature calculations via FLD, but if you need full radiative transfer results, you can:</p>
+<ol class="arabic simple">
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">pyFLD</span></code> to compute initial temperature estimates or even just a density structure</p></li>
+<li><p>Export the model to RADMC-3D format files</p></li>
+<li><p>Run RADMC-3D (<code class="docutils literal notranslate"><span class="pre">mctherm</span></code>/<code class="docutils literal notranslate"><span class="pre">image</span></code>/<code class="docutils literal notranslate"><span class="pre">sed</span></code> commands)</p></li>
+<li><p>Import results back into Python with <code class="docutils literal notranslate"><span class="pre">pyFLD</span></code> (using <code class="docutils literal notranslate"><span class="pre">radmc3dPy</span></code> under the hood)</p></li>
+</ol>
+<p><code class="docutils literal notranslate"><span class="pre">radmc3dPy</span></code> is a Python package included with RADMC-3D that provides tools for reading RADMC-3D output files. The <code class="docutils literal notranslate"><span class="pre">fld.radmc_helper</span></code> module uses it to facilitate the import of RADMC-3D results.</p>
+</section>
+<section id="workflow">
+<h2>Workflow<a class="headerlink" href="#workflow" title="Permalink to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyFLD</span> <span class="k">as</span> <span class="nn">fld</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
+
+<span class="c1"># Step 1: Set up a pyFLD model (see examples)</span>
+<span class="n">grid</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">Grid</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">star</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">star</span><span class="o">.</span><span class="n">Star</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">dust</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">fluids</span><span class="o">.</span><span class="n">Dust</span><span class="p">(</span><span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span> <span class="n">star</span><span class="o">=</span><span class="n">star</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+<span class="c1"># ... configure dust, set density/temperature, enroll functions ...</span>
+<span class="n">dust</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
+<span class="c1"># ... run FLD to get temperature structure ... (optional)</span>
+
+<span class="c1"># Step 2: Create RADMC3D-compatible versions</span>
+<span class="n">rmc_grid</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">radmc_helper</span><span class="o">.</span><span class="n">Grid</span><span class="p">()</span>
+<span class="n">rmc_grid</span><span class="o">.</span><span class="n">setup_from</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
+<span class="n">rmc_star</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">radmc_helper</span><span class="o">.</span><span class="n">Star</span><span class="p">()</span>
+<span class="n">rmc_star</span><span class="o">.</span><span class="n">setup_from</span><span class="p">(</span><span class="n">star</span><span class="p">)</span>
+
+<span class="c1"># Step 3: Write model files</span>
+<span class="n">rmc_grid</span><span class="o">.</span><span class="n">write</span><span class="p">()</span> <span class="c1"># defaults to &#39;amr_grid.inp&#39;</span>
+<span class="n">rmc_star</span><span class="o">.</span><span class="n">write</span><span class="p">()</span> <span class="c1"># defaults to &#39;stars.inp&#39;</span>
+<span class="n">fld</span><span class="o">.</span><span class="n">radmc_helper</span><span class="o">.</span><span class="n">write_wavelength_array</span><span class="p">(</span><span class="n">star</span><span class="o">.</span><span class="n">wl</span><span class="p">)</span> <span class="c1"># &#39;wavelength_micron.inp&#39;</span>
+<span class="n">fld</span><span class="o">.</span><span class="n">radmc_helper</span><span class="o">.</span><span class="n">write_density_array</span><span class="p">([</span><span class="n">dust</span><span class="o">.</span><span class="n">rho</span><span class="p">[</span><span class="n">grid</span><span class="o">.</span><span class="n">active</span><span class="p">]])</span> <span class="c1"># &#39;dust_density.binp&#39;</span>
+<span class="n">fld</span><span class="o">.</span><span class="n">radmc_helper</span><span class="o">.</span><span class="n">write_temperature_array</span><span class="p">(</span><span class="n">dust</span><span class="o">.</span><span class="n">tmp</span><span class="p">[</span><span class="n">grid</span><span class="o">.</span><span class="n">active</span><span class="p">])</span> <span class="c1"># &#39;dust_temperature.bdat&#39; (optional)</span>
+<span class="n">fld</span><span class="o">.</span><span class="n">radmc_helper</span><span class="o">.</span><span class="n">write_opacity_handle</span><span class="p">([</span><span class="s1">&#39;mydust&#39;</span><span class="p">])</span> <span class="c1"># &#39;dustopac.inp&#39;, expects &#39;dustkappa_mydust.inp&#39; for opacities</span>
+<span class="n">fld</span><span class="o">.</span><span class="n">radmc_helper</span><span class="o">.</span><span class="n">write_control_file</span><span class="p">()</span> <span class="c1"># &#39;radmc3d.inp&#39;</span>
+
+<span class="c1"># Step 4: Run RADMC-3D from shell</span>
+<span class="c1"># radmc3d mctherm</span>
+
+<span class="c1"># Step 5: Read and analyze results (requires radmc3dPy)</span>
+<span class="n">rmc_rho</span><span class="p">,</span> <span class="n">rmc_tmp</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">radmc_helper</span><span class="o">.</span><span class="n">read_and_format_radmc_data</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="notes">
+<h2>Notes<a class="headerlink" href="#notes" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p>RADMC3D only supports spherical geometry; Cartesian and cylindrical grids must be converted</p></li>
+<li><p>Ghost cells are automatically stripped because RADMC3D uses only active cells</p></li>
+<li><p>Wavelengths must match between <code class="docutils literal notranslate"><span class="pre">Star</span></code> and opacity data for frequency-dependent calculations</p></li>
+<li><p>Requires <code class="docutils literal notranslate"><span class="pre">radmc3dPy</span></code> package to read RADMC3D output</p></li>
+<li><p>See <a class="reference external" href="best-practices.html">best practices</a> for recommendations on wavelength resolution</p></li>
+</ul>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Permalink to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2012ascl.soft02015D/abstract">Dullemond et al. (2012)</a>: RADMC-3D code paper</p></li>
+<li><p><a class="reference external" href="https://www.github.com/dullemond/radmc3d-2.0">RADMC-3D</a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="usage-io.html" class="btn btn-neutral float-left" title="5. Basic IO" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="examples.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, A. Ziampras.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

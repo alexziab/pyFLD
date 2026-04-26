@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyFLD &mdash; pyFLD 0.4.3 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="pyFLD package" href="pyFLD.html" />
+    <link rel="prev" title="Troubleshooting &amp; FAQ" href="troubleshooting.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pyFLD
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="framework.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="framework.html#implementation">Implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best-practices.html">Best Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting &amp; FAQ</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">pyFLD</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pyFLD.html">pyFLD package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyFLD</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">pyFLD</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/modules.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pyfld">
+<h1>pyFLD<a class="headerlink" href="#pyfld" title="Permalink to this heading"></a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pyFLD.html">pyFLD package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pyFLD.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyFLD.html#module-pyFLD.FLD">pyFLD.FLD module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.E0"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.E0</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.Qirr"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.Qirr</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.Qvisc"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.Qvisc</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.irradiation"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.irradiation</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.viscosity"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.viscosity</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.M"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.M</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.B"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.B</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#id0"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.E0</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#id1"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.Qirr</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#id2"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.Qvisc</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.advance"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.advance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.check_grids"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.check_grids()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.check_source_terms"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.check_source_terms()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.check_stars"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.check_stars()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.check_temperatures"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.check_temperatures()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.compute_Qirr"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.compute_Qirr()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.compute_Qvisc"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.compute_Qvisc()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.compute_irradiation_geometry"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.compute_irradiation_geometry()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.configure_solver"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.configure_solver()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.declare_boundaries"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.declare_boundaries()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.enforce_hydrostatic_equilibrium"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.enforce_hydrostatic_equilibrium()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.enforce_matrix_boundaries"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.enforce_matrix_boundaries()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.get_flux_limiter"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.get_flux_limiter()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.get_surface_density"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.get_surface_density()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#id4"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.irradiation</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.iters"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.iters</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.prepare_grid"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.prepare_grid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.refresh_fluids"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.refresh_fluids()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.setup"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.setup()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.update_fluids"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.update_fluids()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.update_pressure_energy"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.update_pressure_energy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.update_temperature"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.update_temperature()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#id5"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.viscosity</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.RadiativeEnvironment.write_snapshot"><code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment.write_snapshot()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.FLD.create_from_snapshot"><code class="docutils literal notranslate"><span class="pre">create_from_snapshot()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pyFLD.html#module-pyFLD.debug_state">pyFLD.debug_state module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.debug_state.depth"><code class="docutils literal notranslate"><span class="pre">depth()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.debug_state.format_debug"><code class="docutils literal notranslate"><span class="pre">format_debug()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.debug_state.format_warning"><code class="docutils literal notranslate"><span class="pre">format_warning()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.debug_state.pop"><code class="docutils literal notranslate"><span class="pre">pop()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.debug_state.push"><code class="docutils literal notranslate"><span class="pre">push()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pyFLD.html#module-pyFLD.fluids">pyFLD.fluids module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.fluids.Dust"><code class="docutils literal notranslate"><span class="pre">Dust</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.fluids.Dust.grain_rho"><code class="docutils literal notranslate"><span class="pre">Dust.grain_rho</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.fluids.Dust.grain_size"><code class="docutils literal notranslate"><span class="pre">Dust.grain_size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.fluids.Dust.isDust"><code class="docutils literal notranslate"><span class="pre">Dust.isDust</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.fluids.Dust.isGas"><code class="docutils literal notranslate"><span class="pre">Dust.isGas</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.fluids.Dust.compute_hydrostatic_equilibrium"><code class="docutils literal notranslate"><span class="pre">Dust.compute_hydrostatic_equilibrium()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.fluids.Gas"><code class="docutils literal notranslate"><span class="pre">Gas</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.fluids.Gas.isGas"><code class="docutils literal notranslate"><span class="pre">Gas.isGas</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.fluids.Gas.isDust"><code class="docutils literal notranslate"><span class="pre">Gas.isDust</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.fluids.Gas.compute_hydrostatic_equilibrium"><code class="docutils literal notranslate"><span class="pre">Gas.compute_hydrostatic_equilibrium()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.fluids.create_from_snapshot"><code class="docutils literal notranslate"><span class="pre">create_from_snapshot()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pyFLD.html#module-pyFLD.grid">pyFLD.grid module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.grid.Grid"><code class="docutils literal notranslate"><span class="pre">Grid</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.grid.Grid.dV"><code class="docutils literal notranslate"><span class="pre">Grid.dV</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.grid.Grid.active"><code class="docutils literal notranslate"><span class="pre">Grid.active</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.grid.Grid.write_snapshot"><code class="docutils literal notranslate"><span class="pre">Grid.write_snapshot()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.grid.add_ghost_cells"><code class="docutils literal notranslate"><span class="pre">add_ghost_cells()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.grid.create_from_snapshot"><code class="docutils literal notranslate"><span class="pre">create_from_snapshot()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.grid.get_domain_with_ghosts"><code class="docutils literal notranslate"><span class="pre">get_domain_with_ghosts()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pyFLD.html#module-pyFLD.radmc_helper">pyFLD.radmc_helper module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#typical-workflow">Typical Workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.Grid"><code class="docutils literal notranslate"><span class="pre">Grid</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.Grid.dirc"><code class="docutils literal notranslate"><span class="pre">Grid.dirc</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.Grid.flnm"><code class="docutils literal notranslate"><span class="pre">Grid.flnm</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.Grid.read_from_file"><code class="docutils literal notranslate"><span class="pre">Grid.read_from_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.Grid.setup_from"><code class="docutils literal notranslate"><span class="pre">Grid.setup_from()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.Grid.write"><code class="docutils literal notranslate"><span class="pre">Grid.write()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.Star"><code class="docutils literal notranslate"><span class="pre">Star</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.Star.dirc"><code class="docutils literal notranslate"><span class="pre">Star.dirc</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.Star.flnm"><code class="docutils literal notranslate"><span class="pre">Star.flnm</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.Star.p"><code class="docutils literal notranslate"><span class="pre">Star.p</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.Star.read_from_file"><code class="docutils literal notranslate"><span class="pre">Star.read_from_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.Star.setup_from"><code class="docutils literal notranslate"><span class="pre">Star.setup_from()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.Star.update_wavelengths"><code class="docutils literal notranslate"><span class="pre">Star.update_wavelengths()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.Star.write"><code class="docutils literal notranslate"><span class="pre">Star.write()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.get_wavelength_array"><code class="docutils literal notranslate"><span class="pre">get_wavelength_array()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.read_and_format_radmc_data"><code class="docutils literal notranslate"><span class="pre">read_and_format_radmc_data()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.read_wavelength_array"><code class="docutils literal notranslate"><span class="pre">read_wavelength_array()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.write_control_file"><code class="docutils literal notranslate"><span class="pre">write_control_file()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.write_density_array"><code class="docutils literal notranslate"><span class="pre">write_density_array()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.write_flat_opacities"><code class="docutils literal notranslate"><span class="pre">write_flat_opacities()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.write_opacity_handle"><code class="docutils literal notranslate"><span class="pre">write_opacity_handle()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.write_temperature_array"><code class="docutils literal notranslate"><span class="pre">write_temperature_array()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.radmc_helper.write_wavelength_array"><code class="docutils literal notranslate"><span class="pre">write_wavelength_array()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pyFLD.html#module-pyFLD.star">pyFLD.star module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.star.Star"><code class="docutils literal notranslate"><span class="pre">Star</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.star.Star.M"><code class="docutils literal notranslate"><span class="pre">Star.M</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.star.Star.L"><code class="docutils literal notranslate"><span class="pre">Star.L</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.star.Star.T"><code class="docutils literal notranslate"><span class="pre">Star.T</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.star.Star.R"><code class="docutils literal notranslate"><span class="pre">Star.R</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.star.Star.GM"><code class="docutils literal notranslate"><span class="pre">Star.GM</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.star.Star.wl"><code class="docutils literal notranslate"><span class="pre">Star.wl</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.star.Star.nbins"><code class="docutils literal notranslate"><span class="pre">Star.nbins</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.star.Star.L_wl"><code class="docutils literal notranslate"><span class="pre">Star.L_wl</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#id6"><code class="docutils literal notranslate"><span class="pre">Star.L_wl</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.star.Star.get_and_set_spectral_L"><code class="docutils literal notranslate"><span class="pre">Star.get_and_set_spectral_L()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.star.Star.get_spectral_L"><code class="docutils literal notranslate"><span class="pre">Star.get_spectral_L()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.star.Star.get_wavelength_spacing"><code class="docutils literal notranslate"><span class="pre">Star.get_wavelength_spacing()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#id7"><code class="docutils literal notranslate"><span class="pre">Star.nbins</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#id8"><code class="docutils literal notranslate"><span class="pre">Star.wl</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyFLD.html#pyFLD.star.Star.write_snapshot"><code class="docutils literal notranslate"><span class="pre">Star.write_snapshot()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.star.create_from_snapshot"><code class="docutils literal notranslate"><span class="pre">create_from_snapshot()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pyFLD.html#module-pyFLD.tools">pyFLD.tools module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.BBflux"><code class="docutils literal notranslate"><span class="pre">BBflux()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.Er_to_T"><code class="docutils literal notranslate"><span class="pre">Er_to_T()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.T_to_Er"><code class="docutils literal notranslate"><span class="pre">T_to_Er()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.assign_dictionary"><code class="docutils literal notranslate"><span class="pre">assign_dictionary()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.atleast_nd"><code class="docutils literal notranslate"><span class="pre">atleast_nd()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.compute_mean_opacities"><code class="docutils literal notranslate"><span class="pre">compute_mean_opacities()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.extract_and_store_params"><code class="docutils literal notranslate"><span class="pre">extract_and_store_params()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.extract_dictionary"><code class="docutils literal notranslate"><span class="pre">extract_dictionary()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.flux_limiter_kley"><code class="docutils literal notranslate"><span class="pre">flux_limiter_kley()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.get_Wien_temperature"><code class="docutils literal notranslate"><span class="pre">get_Wien_temperature()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.get_Wien_wavelength"><code class="docutils literal notranslate"><span class="pre">get_Wien_wavelength()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.get_alpha_Cecil_Flock_2024"><code class="docutils literal notranslate"><span class="pre">get_alpha_Cecil_Flock_2024()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.get_capped"><code class="docutils literal notranslate"><span class="pre">get_capped()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.get_col0_Flock_2019"><code class="docutils literal notranslate"><span class="pre">get_col0_Flock_2019()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.get_fraction_Isella_Natta_2005"><code class="docutils literal notranslate"><span class="pre">get_fraction_Isella_Natta_2005()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.get_gas_Planck_opacity_Freedman_2008"><code class="docutils literal notranslate"><span class="pre">get_gas_Planck_opacity_Freedman_2008()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.get_gas_Rosseland_opacity_Freedman_2008"><code class="docutils literal notranslate"><span class="pre">get_gas_Rosseland_opacity_Freedman_2008()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.get_one"><code class="docutils literal notranslate"><span class="pre">get_one()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.get_parameters"><code class="docutils literal notranslate"><span class="pre">get_parameters()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.get_surface_density"><code class="docutils literal notranslate"><span class="pre">get_surface_density()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.get_tau0_Flock_2019"><code class="docutils literal notranslate"><span class="pre">get_tau0_Flock_2019()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.get_zero"><code class="docutils literal notranslate"><span class="pre">get_zero()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.have_same_class_contents"><code class="docutils literal notranslate"><span class="pre">have_same_class_contents()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.isQuantity"><code class="docutils literal notranslate"><span class="pre">isQuantity()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.is_halfdisk"><code class="docutils literal notranslate"><span class="pre">is_halfdisk()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.mkdir"><code class="docutils literal notranslate"><span class="pre">mkdir()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.parse_optool_file"><code class="docutils literal notranslate"><span class="pre">parse_optool_file()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.read_and_assign_params"><code class="docutils literal notranslate"><span class="pre">read_and_assign_params()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.read_dictionary"><code class="docutils literal notranslate"><span class="pre">read_dictionary()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.toArray"><code class="docutils literal notranslate"><span class="pre">toArray()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.toQuantity"><code class="docutils literal notranslate"><span class="pre">toQuantity()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.try_reading"><code class="docutils literal notranslate"><span class="pre">try_reading()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.try_writing"><code class="docutils literal notranslate"><span class="pre">try_writing()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyFLD.html#pyFLD.tools.write_dictionary"><code class="docutils literal notranslate"><span class="pre">write_dictionary()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="troubleshooting.html" class="btn btn-neutral float-left" title="Troubleshooting &amp; FAQ" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pyFLD.html" class="btn btn-neutral float-right" title="pyFLD package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, A. Ziampras.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

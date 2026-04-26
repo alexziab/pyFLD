@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>0. Various tools &mdash; pyFLD 0.4.3 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="1. the Grid class" href="usage-grid.html" />
+    <link rel="prev" title="Usage" href="usage.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pyFLD
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="framework.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="framework.html#implementation">Implementation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="usage.html">Usage</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="usage.html#importing-the-package">Importing the package</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">0. Various tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-grid.html">1. the Grid class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-star.html">2. the Star class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-fluid.html">3. Fluids (Gas, Dust)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-FLD.html">4. Radiative environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-io.html">5. Basic IO</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage-radmc_helper.html">6. RADMC-3D integration</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best-practices.html">Best Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting &amp; FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">pyFLD</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyFLD</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="usage.html">Usage</a></li>
+      <li class="breadcrumb-item active">0. Various tools</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/usage-tools.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="various-tools">
+<h1>0. Various tools<a class="headerlink" href="#various-tools" title="Permalink to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">fld.tools</span></code> module contains utility functions that are not specific to any particular fluid type but are generally useful when working with the package. Highlights include:</p>
+<p><strong>Opacity utilities:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">parse_optool_file(filename)</span></code>: Parses a file containing frequency-dependent opacities computed with <a class="reference external" href="https://github.com/cdominik/optool">optool</a> and returns its contents as <code class="docutils literal notranslate"><span class="pre">astropy.Quantity</span></code> objects (wavelengths, absorption opacity, scattering opacity, and asymmetry parameter).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">compute_mean_opacities(wl,</span> <span class="pre">kabs,</span> <span class="pre">ksca,</span> <span class="pre">g,</span> <span class="pre">T=None,</span> <span class="pre">...)</span></code>: Computes Rosseland and Planck mean opacities from wavelength-dependent opacity data by integrating over the Planck function. This function is called automatically under the hood when frequency-dependent opacity data are provided to a fluid object, but it can also be useful on its own.</p></li>
+</ul>
+<p><strong>Radiation and temperature conversion:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">T_to_Er(T)</span></code>: Converts temperature to radiation energy density using <span class="math notranslate nohighlight">\(E_\mathrm{r} = a_\mathrm{R} T^4\)</span>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Er_to_T(Er)</span></code>: The inverse of the above — converts radiation energy density to temperature.</p></li>
+</ul>
+<p><strong>Initial/boundary condition helpers:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">get_tau0_Flock_2019(fluid)</span></code>: Returns the gray optical depth between the stellar surface and the inner radial boundary of the grid, following the prescription of Flock et al. (2019). Intended to be passed to <code class="docutils literal notranslate"><span class="pre">fluid.enroll_tau0</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_col0_Flock_2019(fluid)</span></code>: Similar, but returns the column density for frequency-dependent irradiation. Intended to be passed to <code class="docutils literal notranslate"><span class="pre">fluid.enroll_col0</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_fraction_Isella_Natta_2005(fluid)</span></code>: Returns a dust sublimation fraction following Isella &amp; Natta (2005), useful for modeling the dust sublimation front near the star. Intended to be passed to <code class="docutils literal notranslate"><span class="pre">fluid.enroll_effective_fraction</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_alpha_Cecil_Flock_2024(fluid)</span></code>: Returns a spatially varying turbulent viscosity parameter <span class="math notranslate nohighlight">\(\alpha\)</span> profile following Cecil &amp; Flock (2024). Intended to be passed to <code class="docutils literal notranslate"><span class="pre">fluid.enroll_alpha</span></code>.</p></li>
+</ul>
+<p><strong>Miscellaneous:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">get_surface_density(grid,</span> <span class="pre">rho)</span></code>: Integrates density along the polar direction to compute the vertically integrated surface density (spherical geometry only).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">toQuantity(arr,</span> <span class="pre">unit)</span></code>: Converts a plain array or scalar to an <code class="docutils literal notranslate"><span class="pre">astropy.Quantity</span></code> with the specified unit, handling the case where the input is already a Quantity gracefully.</p></li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="usage.html" class="btn btn-neutral float-left" title="Usage" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="usage-grid.html" class="btn btn-neutral float-right" title="1. the Grid class" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, A. Ziampras.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
