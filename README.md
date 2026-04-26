@@ -3,8 +3,6 @@
 
 <!-- table of contents with hyperlinks: -->
 - [Installation](#installation)
-     - [1. Downloading the module](#1-downloading-the-module)
-     - [2. Installing `pyFLD`](#2-installing-pyFLD)
 - [Typical Workflow](#typical-workflow)
 - [File Outputs](#file-outputs)
 - [Examples](#examples)
@@ -84,4 +82,4 @@ _Ondřej Chrenko, ..., Alexandros Ziampras, ..._
 
 - Sphinx documentation can be found in the `docs/build/` folder, also hosted [here](https://alexziab.github.io/resources/pyFLD/readthedocs/).
 - For additional details, see docstrings/comments in the `pyFLD/` folder.
-- See publication for further context and usage recommendations.
+- See publication for further context and usage recommendations (TO BE ADDED).
