@@ -654,7 +654,7 @@ class RadiativeEnvironment(fl._GenericFluid):
         self._push_region("compute_Qvisc")
 
         if self.grid.geometry in gr.aux_spherical: R = 1 * self.grid.R
-        elif self.geometry in gr.aux_cylindrical: R = 1 * self.grid.x1
+        elif self.grid.geometry in gr.aux_cylindrical: R = 1 * self.grid.x1
         else: raise NotImplementedError("Viscous heating is only implemented for spherical and cylindrical geometries.")
 
         if self.star is None:
