@@ -35,7 +35,7 @@ class _GenericFluid:
     _initialized_temperature = False
     _initialized = False
 
-    def __init__(self, grid:gr.Grid|None=None, star:st.Star|None=None, name=None,
+    def __init__(self, grid:gr.Grid=None, star:st.Star=None, name=None,
                  mu=2.353, gamma=1.4, verbose=True, debug=False):
 
         self._set_debug_name(debug=debug, name=name)
