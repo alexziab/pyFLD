@@ -461,7 +461,7 @@ class RadiativeEnvironment(fl._GenericFluid):
         self._scaled_arrays = False
         self._pop_region()
 
-    def _solve_system(self):
+    def _solve_system(self, recompute_preconditioner=True, **ilu_kwargs):
         """
         Solve the linear FLD system using iterative or direct solver.
 
@@ -510,24 +510,30 @@ class RadiativeEnvironment(fl._GenericFluid):
         A = sp.diags(diagonals, offsets, format='csc') # type: ignore[attr-defined]
         
         if self._precondition:
-            if self.preconditioner in ['ilu', 'rescaled ilu']:
-                try:
-                    self._logging("Attempting ILU preconditioning...")
-                    ilu = sp.linalg.spilu(A) # Sparse ILU decomposition
-                    Mat = sp.linalg.LinearOperator(A.shape, ilu.solve)
-                    self._logging("ILU preconditioning successful.")
-                except:
-                    self._log_warning("ILU failed, falling back to Jacobi")
+            if recompute_preconditioner:
+                if self.preconditioner in ['ilu', 'rescaled ilu']:
+                    try:
+                        self._logging("Attempting ILU preconditioning...")
+                        ilu = sp.linalg.spilu(A, **ilu_kwargs) # Sparse ILU decomposition
+                        self.Mat = sp.linalg.LinearOperator(A.shape, ilu.solve)
+                        self._logging("ILU preconditioning successful.")
+                    except:
+                        self._log_warning("ILU failed, falling back to Jacobi")
+                        self._logging("Using Jacobi preconditioning...")
+                        D_inv = 1.0 / A.diagonal()
+                        self.Mat = sp.linalg.LinearOperator(A.shape, lambda x: D_inv * x)
+                        self._logging("Jacobi preconditioning successful.")
+                elif self.preconditioner in ['jacobi', 'rescaled jacobi']:
                     self._logging("Using Jacobi preconditioning...")
                     D_inv = 1.0 / A.diagonal()
-                    Mat = sp.linalg.LinearOperator(A.shape, lambda x: D_inv * x)
+                    self.Mat = sp.linalg.LinearOperator(A.shape, lambda x: D_inv * x)
                     self._logging("Jacobi preconditioning successful.")
-            elif self.preconditioner in ['jacobi', 'rescaled jacobi']:
-                self._logging("Using Jacobi preconditioning...")
-                D_inv = 1.0 / A.diagonal()
-                Mat = sp.linalg.LinearOperator(A.shape, lambda x: D_inv * x)
-                self._logging("Jacobi preconditioning successful.")
-            else: raise ValueError(f"Unknown preconditioner type: {self.preconditioner}")
+                else: raise ValueError(f"Unknown preconditioner type: {self.preconditioner}")
+            else:
+                try: self.Mat
+                except NameError:
+                    raise ValueError("Preconditioner has not been computed. Please set recompute_preconditioner=True.")
+
 
             iters = 0
             def cb(xk): # count iterations
@@ -540,7 +546,7 @@ class RadiativeEnvironment(fl._GenericFluid):
             maxiter = self.solver_settings['maxiter']
 
             self._logging(f"Solving with {solver}...")
-            kwargs = dict(M=Mat, rtol=rtol, maxiter=maxiter, callback=cb)
+            kwargs = dict(M=self.Mat, rtol=rtol, maxiter=maxiter, callback=cb)
             if guess: # provide Erad as initial guess
                 x0 = self.Er[act].to_value(self.E0).flatten()
                 kwargs['x0'] = x0
@@ -750,7 +756,7 @@ class RadiativeEnvironment(fl._GenericFluid):
 
         self._pop_region()
     
-    def advance(self, dt=1*u.yr, uf=0):
+    def advance(self, dt=1*u.yr, uf=0, recompute_preconditioner=True, **ilu_kwargs):
         """
         Advance radiation-hydrodynamics by one timestep.
 
@@ -765,6 +771,14 @@ class RadiativeEnvironment(fl._GenericFluid):
             Timestep size (default: 1 yr)
         uf : float [0-1], optional
             Under-relaxation factor for temperature update (default: 0)
+        recompute_preconditioner : bool, optional
+            Whether to recompute preconditioner before solving (default: True)
+            It might be worth setting this to False if the system
+            doesn't change much between steps to save time, especially when
+            using ILU as it can be expensive to compute.
+        ilu_kwargs : dict, optional
+            Additional keyword arguments to pass to spilu for ILU preconditioning (default: {})
+            Options include 'drop_tol' for controlling fill-in and 'fill_factor' for maximum nonzeros.
 
         Raises
         ------
@@ -782,7 +796,7 @@ class RadiativeEnvironment(fl._GenericFluid):
         if self.viscosity: self.compute_Qvisc()
         self._build_matrix(dt=dt)
 
-        Enew = self._solve_system()
+        Enew = self._solve_system(recompute_preconditioner=recompute_preconditioner, **ilu_kwargs)
         self.enforce_boundaries(Enew)
         self.update_temperature(Enew, dt, uf=uf)
         self.update_fluids()
