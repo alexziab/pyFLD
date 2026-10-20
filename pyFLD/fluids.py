@@ -1216,8 +1216,9 @@ class Gas(_RadiativeFluid):
 
         def integrate(start, end, step):
             lnrho = np.zeros(rho_.shape) # temporary array
-            s_ = np.s_[:, mid:mid+2] if side == 'both' else np.s_[:, mid]
-            lnrho[s_] = ln(sig / np.sqrt(2*np.pi) / H[s_] / uden) # midplane
+            offset = 2 if side == 'both' else 1
+            s_ = np.s_[:, mid:mid+offset] # slice for midplane
+            lnrho[s_] = ln(sig[:,None,:] / np.sqrt(2*np.pi) / H[s_] / uden) # midplane
             for j in range(start, end, step): # from midplane to pole (we slice in θ)
                 delta_th = th[j+step]-th[j]
                 # predictor
@@ -1305,10 +1306,11 @@ def create_from_snapshot(dirc='./', name='fluid'):
         assign_multitype('kappaPstar', 'kappaPstar_cgs.dbl', u.cm**2/u.g)
         # assign_multitype('tau0', 'tau0.dbl', force=False, shape=)
     
-    Nwl = star.nbins # type: ignore[union-attr]
-    assign_multitype('kabs_wl', 'kabs_wl_cgs.dbl', u.cm**2/u.g, force=False, shape=Nwl)
-    assign_multitype('ksca_wl', 'ksca_wl_cgs.dbl', u.cm**2/u.g, force=False, shape=Nwl)
-    assign_multitype('g_wl', 'g_wl.dbl', force=False, shape=Nwl)
+    if star is not None: # wavelength-dependent opacities are sized by the star's wavelength grid
+        Nwl = star.nbins
+        assign_multitype('kabs_wl', 'kabs_wl_cgs.dbl', u.cm**2/u.g, force=False, shape=Nwl)
+        assign_multitype('ksca_wl', 'ksca_wl_cgs.dbl', u.cm**2/u.g, force=False, shape=Nwl)
+        assign_multitype('g_wl', 'g_wl.dbl', force=False, shape=Nwl)
 
     fluid._rebuild_after_read()
 
