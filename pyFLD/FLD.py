@@ -64,6 +64,8 @@ class RadiativeEnvironment(fl._GenericFluid):
     irradiation = False
     viscosity   = False
     _scaled_arrays = False
+    Mat = None # linear operator for preconditioner
+    _Mat_kind = None # preconditioner type that Mat was built for
     iters = -1
 
     _initialized_boundaries = False
@@ -510,7 +512,11 @@ class RadiativeEnvironment(fl._GenericFluid):
         A = sp.diags(diagonals, offsets, format='csc') # type: ignore[attr-defined]
         
         if self._precondition:
-            if recompute_preconditioner:
+            # reuse the previous preconditioner only if it exists and is of the requested type
+            reusable = self.Mat is not None and self._Mat_kind == self.preconditioner
+            if recompute_preconditioner or not reusable:
+                if not recompute_preconditioner:
+                    self._logging("No reusable preconditioner available, computing a new one.")
                 if self.preconditioner in ['ilu', 'rescaled ilu']:
                     try:
                         self._logging("Attempting ILU preconditioning...")
@@ -529,10 +535,7 @@ class RadiativeEnvironment(fl._GenericFluid):
                     self.Mat = sp.linalg.LinearOperator(A.shape, lambda x: D_inv * x)
                     self._logging("Jacobi preconditioning successful.")
                 else: raise ValueError(f"Unknown preconditioner type: {self.preconditioner}")
-            else:
-                try: self.Mat
-                except NameError:
-                    raise ValueError("Preconditioner has not been computed. Please set recompute_preconditioner=True.")
+                self._Mat_kind = self.preconditioner
 
 
             iters = 0
@@ -775,7 +778,9 @@ class RadiativeEnvironment(fl._GenericFluid):
             Whether to recompute preconditioner before solving (default: True)
             It might be worth setting this to False if the system
             doesn't change much between steps to save time, especially when
-            using ILU as it can be expensive to compute.
+            using ILU as it can be expensive to compute. If False, the previous
+            preconditioner is reused when available, and a new one is computed
+            otherwise (e.g., on the first call or after changing ``preconditioner``).
         ilu_kwargs : dict, optional
             Additional keyword arguments to pass to spilu for ILU preconditioning (default: {})
             Options include 'drop_tol' for controlling fill-in and 'fill_factor' for maximum nonzeros.
@@ -848,7 +853,7 @@ class RadiativeEnvironment(fl._GenericFluid):
         tb.mkdir(dirc)
         tb.mkdir(model_dirc)
 
-        skipped_keys = ['M', 'X', 'Y', 'Z', 'B', 'P', 'Mat', # matrix
+        skipped_keys = ['M', 'X', 'Y', 'Z', 'B', 'P', 'Mat', '_Mat_kind', # matrix
                 'eng', 'prs', # derivative quantities
                 'geom', 'fluids', 'grid', 'star', 'Mactive', # objects and misc
                 'solve_x1', 'solve_x2', 'solve_x3', '_precondition', # flags

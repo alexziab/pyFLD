@@ -189,8 +189,8 @@ def test_convert_T_to_Er():
     T = 10 * u.K
     assert np.isclose(T, fld.tools.Er_to_T(fld.tools.T_to_Er(T)), rtol=1e-6)
 
-def prep_test_radiative_line(precondition=True,
-                             preconditioner='ilu',
+def prep_test_radiative_line(preconditioner='ilu',
+                             recompute_preconditioner=True,
                              trigger_nan=False,
                              trigger_wrong_boundary_length=False,
                              trigger_wrong_boundary_type=False):
@@ -204,7 +204,6 @@ def prep_test_radiative_line(precondition=True,
     Gas.setup()
     Box = fld.FLD.RadiativeEnvironment([Gas], verbose=True, name='box',
                                        constant_fluxlimiter=True,
-                                       precondition=precondition,
                                        preconditioner=preconditioner)
     val, ref = fld.grid.BOUNDARY_FIXEDVALUE, fld.grid.BOUNDARY_REFLECTIVE
     bounds = [val, val, ref, ref, ref, ref]
@@ -213,7 +212,8 @@ def prep_test_radiative_line(precondition=True,
     elif trigger_wrong_boundary_type: Box.declare_boundaries(['a']*6, vals)
     else: Box.declare_boundaries(bounds, vals)
     Box.configure_solver(rtol=1e-10)
-    for _ in range(5): Box.advance(dt=1e10 * u.s)
+    for _ in range(5): Box.advance(dt=1e10 * u.s,
+                                   recompute_preconditioner=recompute_preconditioner)
 
     # compare profile to analytical solution
     x = grid.x1[grid.act1].to_value('cm')
@@ -229,15 +229,36 @@ def prep_test_radiative_line(precondition=True,
     Eexp = Eexp.to_value(E0)
 
     assert np.allclose(Er_, Eexp, rtol=1e-8)
+    return Box
 
-def test_radiative_line(): prep_test_radiative_line(precondition=True)
-def test_radiative_line_unpreconditioned(): prep_test_radiative_line(precondition=False)
+def test_radiative_line():
+    prep_test_radiative_line()
+def test_radiative_line_unpreconditioned():
+    prep_test_radiative_line(preconditioner='none')
+def test_radiative_line_reuse_preconditioner():
+    # no preconditioner exists before the first step, so one must be computed
+    Box = prep_test_radiative_line(recompute_preconditioner=False)
+    assert Box.Mat is not None
+    assert Box._Mat_kind == 'ilu'
+def test_radiative_line_switch_preconditioner():
+    # changing the preconditioner type must not reuse the old one
+    Box = prep_test_radiative_line(recompute_preconditioner=False)
+    Box.preconditioner = 'jacobi'
+    Box.advance(dt=1e10 * u.s, recompute_preconditioner=False)
+    assert Box._Mat_kind == 'jacobi'
 
-def test_radiative_line_failures():
+def test_radiative_line_wrong_boundary_length():
     with pytest.raises(ValueError):
         prep_test_radiative_line(trigger_wrong_boundary_length=True)
+def test_radiative_line_wrong_boundary_type():
     with pytest.raises(ValueError):
         prep_test_radiative_line(trigger_wrong_boundary_type=True)
+def test_radiative_line_unknown_preconditioner():
+    with pytest.raises(ValueError):
+        prep_test_radiative_line(preconditioner='unknown')
+def test_radiative_line_no_preconditioner():
+    with pytest.raises(ValueError):
+        prep_test_radiative_line(preconditioner=False)
 
 def test_radiative_line_preconditioner_alert():
     # still works, just throws a warning about the rescaling
@@ -491,8 +512,14 @@ def prep_test_optically_thin_viscous_disk(alpha=1e-3, implicit_viscosity=False, 
 
 def test_optically_thin_viscous_disk():
     prep_test_optically_thin_viscous_disk(alpha=1e-2)
+
+def test_optically_thin_viscous_disk_freqdep():
     prep_test_optically_thin_viscous_disk(alpha=1e-2, freqdep=True)
-    # prep_test_optically_thin_viscous_disk(alpha=1e-2, implicit_viscosity=True)
+
+# this test fails for now
+# def test_optically_thin_viscous_disk_implicit_viscosity():
+#     # should work, but raise a warning about implicit viscosity being used
+#     prep_test_optically_thin_viscous_disk(alpha=1e-2, implicit_viscosity=True)
 
 def dont_test_pyFLD_freqdep():
     # === opacities ===
@@ -801,6 +828,22 @@ def test_fluid_IO():
     assert np.allclose(Gnew.rho, Gas.rho, rtol=1e-16)
     assert np.allclose(Gnew.tmp, Gas.tmp, rtol=1e-16)
     assert np.isclose(Gnew.mu, Gas.mu, rtol=1e-16)
+
+def test_fluid_IO_no_star():
+    grid = get_spherical_grid(halfdisk=True)
+    Gas  = fld.fluids.Gas(grid=grid, star=None)
+    Gas.set_density(1e-10 * u.g/u.cm**3 * np.ones(grid.shape))
+    Gas.set_temperature(100 * u.K * np.ones(grid.shape))
+    Gas.enroll_kappaP(lambda f: 1.0 * u.cm**2/u.g)
+    Gas.enroll_kappaR(lambda f: 1.0 * u.cm**2/u.g)
+    Gas.setup()
+    dirc = test_dirc
+    Gas.write_snapshot(dirc=dirc, name='gas-nostar')
+
+    Gnew = fld.fluids.create_from_snapshot(dirc=dirc, name='gas-nostar')
+    assert Gnew.star is None
+    assert np.allclose(Gnew.rho, Gas.rho, rtol=1e-16)
+    assert np.allclose(Gnew.tmp, Gas.tmp, rtol=1e-16)
 
 
 def test_freqdep_fluid_IO():
