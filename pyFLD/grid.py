@@ -1,5 +1,6 @@
 import numpy as np
 from astropy import units as u
+from . import debug_state as dbg
 
 # Geometry options
 aux_cartesian = ['cart', 'cartesian', 'xyz']
@@ -231,8 +232,27 @@ class Grid:
 
         if self.geometry in aux_spherical:
             self.PHIAXIS, self.THETAAXIS, self.RAXIS = 0, 1, 2
-            self.mid  = np.argmin(np.abs(self.x2[self.act2] - np.pi/2))
-            self.midi = np.argmin(np.abs(self.x2i[self.act2i] - np.pi/2))
+            # mid: active index of the cell next to the midplane. Top half or full
+            # disk: last cell with theta < pi/2. Bottom half: first cell with theta > pi/2.
+            x2, x2i = self.x2[self.act2], self.x2i[self.act2i]
+            upper = np.nonzero(x2 < np.pi/2)[0]
+            self.mid  = upper[-1] if upper.size > 0 else 0
+            self.midi = np.argmin(np.abs(x2i - np.pi/2))
+
+            # vertical integrations (e.g. hydrostatic equilibrium) start from the
+            # midplane, which is only well defined if it falls on a cell interface
+            if not np.isclose(x2i[self.midi], np.pi/2):
+                dbg.format_warning(prefix="Grid", msg="no cell interface at pi/2 "
+                                   f"(closest: {x2i[self.midi]:.6f}); the midplane falls inside a cell, "
+                                   "so vertical integrations will not start exactly at the midplane.",
+                                   indent=dbg.depth())
+                # if no cell center is at the midplane either, the midplane is not sampled at all
+                closest = x2[np.argmin(np.abs(x2 - np.pi/2))]
+                if not np.isclose(closest, np.pi/2):
+                    dbg.format_warning(prefix="Grid", msg="no cell center at pi/2 either "
+                                       f"(closest: {closest:.6f}); the midplane is not resolved by "
+                                       "the grid, and quantities at grid.mid are offset from it.",
+                                       indent=dbg.depth())
 
     def _build_grid(self):
         """
