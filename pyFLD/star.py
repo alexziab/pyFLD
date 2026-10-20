@@ -66,7 +66,6 @@ class Star:
             self.wl = tb.toQuantity(tb.atleast_nd(wl, d=1), u.cm)
             self.nbins = len(self.wl)
             self.get_and_set_spectral_L()
-            self._enforce_L_consistency()
         
     def get_wavelength_spacing(self):
         """
@@ -89,7 +88,8 @@ class Star:
             raise ValueError("Wavelength array wl is not defined for this star.")
         # wl is likely logarithmically spaced -> take gradient in log space
         log_wl = np.log(self.wl.to_value('cm'))
-        dlog_wl = np.gradient(log_wl, edge_order=2)
+        order = 2 if log_wl.size > 2 else 1
+        dlog_wl = np.gradient(log_wl, edge_order=order)
         dwl = (self.wl * dlog_wl).to('cm')
         return dwl
 
@@ -143,9 +143,12 @@ class Star:
         Calculates spectral luminosity from the Planck function and ensures
         consistency with the total luminosity through normalization.
         """
-        L_wl = self.get_spectral_L()
-        self._set_spectral_L(L_wl)
-        self._enforce_L_consistency()
+        if self.nbins > 1:
+            L_wl = self.get_spectral_L()
+            self._set_spectral_L(L_wl)
+            self._enforce_L_consistency()
+        else: # handle single wavelength case
+            self.L_wl = np.atleast_1d(self.L.to('Lsun'))
 
     def _enforce_L_consistency(self):
         """
@@ -162,11 +165,18 @@ class Star:
         """
         if self.wl is None:
             raise ValueError("Wavelength array wl is not defined for this star.")
+        if self.nbins is not None and self.nbins < 2: return
+
         L_wl = self.get_spectral_L()
         Ltot = np.sum(L_wl).to('Lsun')
-        if not np.isclose(self.L, Ltot, rtol=1e-4):
+        err = np.abs((Ltot - self.L) / self.L).to_value('')
+        if err > 0.2:
+            raise ValueError(f"Recalculated frequency-dependent stellar luminosity ({Ltot:.16e}) "
+                    f"differs from provided L ({self.L:.16e}) by more than 20%. "
+                    f"Check wavelength sampling or input parameters.")
+        elif not err < 1e-4:
             dbg.format_warning(prefix=self.prefix, msg=f"Recalculated frequency-dependent stellar luminosity ({Ltot:.16e}) "
-                    f"does not match provided L ({self.L:.16e}). L is set to {Ltot:.16e}.", indent=dbg.depth())
+                    f"does not match provided L ({self.L:.16e}). L is set to {Ltot:.16e}, R has not been reset.", indent=dbg.depth())
             self.L = Ltot
 
     def write_snapshot(self, dirc='./', name='star'):

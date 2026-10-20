@@ -254,7 +254,6 @@ class Star(st.Star):
         self.wl = tb.toQuantity(wl, u.cm)
         self.nbins = len(self.wl)
         self.get_and_set_spectral_L()
-        self._enforce_L_consistency()
 
 class Grid(gr.Grid):
     """
@@ -518,12 +517,16 @@ def get_wavelength_array(wl_min=0.1*u.um, wl_max=1*u.cm, Npts=100, refine_10um=T
     if wl_min > wl_peak / 4:
         dbg.format_warning(msg=f"Warning: stellar emission peaks at {wl_peak.to('um'):.2f}, and minimum wavelength is {wl_min.to('um'):.2f}. Consider lowering wl_min.", indent=dbg.depth())
 
-    if not refine_10um: return np.geomspace(wl_min.to_value('um'), wl_max.to_value('um'), Npts)
+    if not refine_10um:
+        return np.geomspace(wl_min.to_value('um'), wl_max.to_value('um'), Npts) * u.um
 
     wl_min_um  = wl_min.to_value('um')
     wl_max_um  = wl_max.to_value('um')
     wl_ref_min_um = 7.0 # um
     wl_ref_max_um = 25.0 # um
+    # throw an error if either end of the refined band is out of bounds
+    if wl_ref_min_um < wl_min_um or wl_ref_max_um > wl_max_um:
+        raise ValueError(f"Refined wavelength range [{wl_ref_min_um}, {wl_ref_max_um}] um is outside the bounds of [{wl_min_um}, {wl_max_um}] um.")
     
     arr1 = np.geomspace(wl_min_um, wl_ref_min_um, Npts//2, endpoint=False)
     arr2 = np.geomspace(wl_ref_min_um, wl_ref_max_um, 2*Npts, endpoint=False)
