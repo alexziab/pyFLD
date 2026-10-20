@@ -32,7 +32,7 @@ class RadiativeEnvironment(fl._GenericFluid):
     constant_fluxlimiter : bool, optional
         Use constant flux limiter (lambda=1/3) instead of Kley formula (default: False)
     preconditioner : str, optional
-        Preconditioning method for iterative solver: 'ilu', 'jacobi', 'rescaled ilu', 'rescaled jacobi', or False (default: 'ilu')
+        Preconditioning method for iterative solver: 'ilu', 'jacobi', 'rescaled ilu', 'rescaled jacobi', or 'none' (default: 'ilu')
     implicit_viscosity : bool, optional
         Treat viscosity implicitly, experimental (default: False)
     ``**kwargs``
@@ -92,11 +92,11 @@ class RadiativeEnvironment(fl._GenericFluid):
         self.implicit_viscosity = implicit_viscosity
         self.verbose = verbose
         self.constant_fluxlimiter = constant_fluxlimiter
-        precondition_options = ['ilu', 'jacobi', 'rescaled ilu', 'rescaled jacobi', False]
+        precondition_options = ['ilu', 'jacobi', 'rescaled ilu', 'rescaled jacobi', 'none']
         if preconditioner not in precondition_options:
             raise ValueError(f"Invalid preconditioner. Please specify any of: {precondition_options}")
         self.preconditioner = preconditioner
-        self._precondition = bool(self.preconditioner) # keep a boolean internally
+        self._precondition = False if self.preconditioner == 'none' else True # keep a boolean internally
         if preconditioner.find('rescaled') >= 0 and verbose:
             self._log_warning(f'{preconditioner} preconditioning is experimental.')
 
@@ -342,20 +342,20 @@ class RadiativeEnvironment(fl._GenericFluid):
         self.M[:] = 0
 
         if self.solve_x1:
-            Dbar_m1 = 2 * dx1_ / (dx1_/D + shift(dx1_,-1)/shift(D,-1,2))
-            Dbar_p1 = 2 * dx1_ / (dx1_/D + shift(dx1_,+1)/shift(D,+1,2))
-            self.M[1] -= Dbar_m1 * h1 / dx1_ * dt/dV * A1[:,:,:-1]
-            self.M[2] -= Dbar_p1 * h1 / dx1_ * dt/dV * A1[:,:,+1:]
+            ubar_m1 = 2 / (dx1_/(h1*D) + shift(dx1_,-1)/shift(h1*D,-1,2))
+            ubar_p1 = 2 / (dx1_/(h1*D) + shift(dx1_,+1)/shift(h1*D,+1,2))
+            self.M[1] -= ubar_m1 * dt/dV * A1[:,:,:-1]
+            self.M[2] -= ubar_p1 * dt/dV * A1[:,:,+1:]
         if self.solve_x2:
-            Dbar_m2 = 2 * dx2_ / (dx2_/D + shift(dx2_,-1)/shift(D,-1,1))
-            Dbar_p2 = 2 * dx2_ / (dx2_/D + shift(dx2_,+1)/shift(D,+1,1))
-            self.M[3] -= Dbar_m2 * h2 / dx2_ * dt/dV * A2[:,:-1,:]
-            self.M[4] -= Dbar_p2 * h2 / dx2_ * dt/dV * A2[:,+1:,:]
+            ubar_m2 = 2 / (dx2_/(h2*D) + shift(dx2_,-1)/shift(h2*D,-1,1))
+            ubar_p2 = 2 / (dx2_/(h2*D) + shift(dx2_,+1)/shift(h2*D,+1,1))
+            self.M[3] -= ubar_m2 * dt/dV * A2[:,:-1,:]
+            self.M[4] -= ubar_p2 * dt/dV * A2[:,+1:,:]
         if self.solve_x3:
-            Dbar_m3 = 2 * dx3_ / (dx3_/D + shift(dx3_,-1)/shift(D,-1,0))
-            Dbar_p3 = 2 * dx3_ / (dx3_/D + shift(dx3_,+1)/shift(D,+1,0))
-            self.M[5] -= Dbar_m3 * h3 / dx3_ * dt/dV * A3[:-1,:,:]
-            self.M[6] -= Dbar_p3 * h3 / dx3_ * dt/dV * A3[+1:,:,:]
+            ubar_m3 = 2 / (dx3_/(h3*D) + shift(dx3_,-1)/shift(h3*D,-1,0))
+            ubar_p3 = 2 / (dx3_/(h3*D) + shift(dx3_,+1)/shift(h3*D,+1,0))
+            self.M[5] -= ubar_m3 * dt/dV * A3[:-1,:,:]
+            self.M[6] -= ubar_p3 * dt/dV * A3[+1:,:,:]
 
         self.M[0] = 1 + Y*(Z-4*X)/Z - np.sum(self.M[1:], axis=0)
 
@@ -517,7 +517,7 @@ class RadiativeEnvironment(fl._GenericFluid):
                         ilu = sp.linalg.spilu(A, **ilu_kwargs) # Sparse ILU decomposition
                         self.Mat = sp.linalg.LinearOperator(A.shape, ilu.solve)
                         self._logging("ILU preconditioning successful.")
-                    except:
+                    except (RuntimeError, MemoryError):
                         self._log_warning("ILU failed, falling back to Jacobi")
                         self._logging("Using Jacobi preconditioning...")
                         D_inv = 1.0 / A.diagonal()
@@ -642,7 +642,7 @@ class RadiativeEnvironment(fl._GenericFluid):
         Compute viscous heating source term.
 
         Integrates viscous dissipation across all fluids with viscosity enabled:
-        Q_visc = (9/4) alpha sqrt(gamma)^2 P Omega_K. Only works in spherical geometry.
+        Q_visc = (9/4) alpha sqrt(gamma) P Omega_K. Works in cylindrical/spherical geometry.
 
         Updates
         -------
@@ -652,7 +652,7 @@ class RadiativeEnvironment(fl._GenericFluid):
         Raises
         ------
         NotImplementedError
-            If grid geometry is not spherical
+            If grid geometry is not spherical or cylindrical
         ValueError
             If star object is not available
         """
@@ -848,7 +848,7 @@ class RadiativeEnvironment(fl._GenericFluid):
         tb.mkdir(dirc)
         tb.mkdir(model_dirc)
 
-        skipped_keys = ['M', 'X', 'Y', 'Z', 'B', 'P', # matrix
+        skipped_keys = ['M', 'X', 'Y', 'Z', 'B', 'P', 'Mat', # matrix
                 'eng', 'prs', # derivative quantities
                 'geom', 'fluids', 'grid', 'star', 'Mactive', # objects and misc
                 'solve_x1', 'solve_x2', 'solve_x3', '_precondition', # flags
@@ -861,7 +861,7 @@ class RadiativeEnvironment(fl._GenericFluid):
         self.grid.write_snapshot(dirc=model_dirc, name='grid')
         self.star.write_snapshot(dirc=model_dirc, name='star')
         for i, f in enumerate(self.fluids):
-            f.write_snapshot(dirc=model_dirc, name=f'fluid-{i}')
+            f.write_snapshot(dirc=model_dirc, name=f'fluid-{i:03d}')
 
         self._pop_region()
 
