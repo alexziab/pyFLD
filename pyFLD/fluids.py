@@ -419,7 +419,7 @@ class _RadiativeFluid(_GenericFluid):
 
         if irradiation not in ['gray', 'freqdep', False]:
             raise ValueError(f"{self.get_prefix()}: irradiation must be one of 'gray', 'freqdep', or False.")
-        if self.star is None and self.verbose:
+        if self.star is None:
             if viscosity or irradiation:
                 raise ValueError(f"{self.get_prefix()}: No Star object provided; irradiation/heating cannot be used.")
         self.viscosity = viscosity

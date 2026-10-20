@@ -715,5 +715,5 @@ def try_writing(q, filename, unit=None):
     if isQuantity(q) and unit is None:
         raise ValueError("a unit should be provided. Hint:", q.unit)
 
-    if unit != None: q.to_value(unit).tofile(filename)
+    if isQuantity(q) and unit is not None: q.to_value(unit).tofile(filename)
     else: q.tofile(filename)
