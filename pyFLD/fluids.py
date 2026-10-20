@@ -36,7 +36,7 @@ class _GenericFluid:
     _initialized_temperature = False
     _initialized = False
 
-    def __init__(self, grid:gr.Grid=None, star:st.Star=None, name=None,
+    def __init__(self, grid=None, star=None, name=None,
                  mu=2.353, gamma=1.4, verbose=True, debug=False):
 
         self._set_debug_name(debug=debug, name=name)
@@ -207,7 +207,7 @@ class _GenericFluid:
         """
         self._push_region("update_pressure_energy")
 
-        self.prs = self.rho_eff * self.tmp * tb.Rgas / self.mu
+        self.prs = self.rho_eff * self.tmp * tb.Rgas / self.mu # type: ignore[operator]
         self.eng = self.prs / (self.gamma-1)
 
         self._pop_region()
@@ -233,7 +233,8 @@ class _GenericFluid:
         self._push_region("get_surface_density")
 
         act = self.grid.active
-        sig = tb.get_surface_density(self.grid, self.rho_eff[act])
+        sig = tb.get_surface_density(self.grid,
+                                    self.rho_eff[act]) # type: ignore[index]
 
         self._pop_region()
         return sig
@@ -1087,7 +1088,7 @@ class Dust(_RadiativeFluid):
         if rhogas is None:
             raise ValueError("please provide rhogas for dust hydrostatic equilibrium")
 
-        rho_a = self.grain_rho * self.grain_size
+        rho_a = self.grain_rho * self.grain_size # type: ignore[operator]
 
         g = self.grid
         side = self._get_disk_side()
@@ -1109,7 +1110,7 @@ class Dust(_RadiativeFluid):
 
         uden = u.g/u.cm**3
         shape = g.active_shape
-        rho_new = np.zeros(shape) * uden
+        rho_new = u.Quantity(np.zeros(shape), unit=uden)
         # Stokes / alpha parameter
         St_a  = np.sqrt(np.pi/8) * rho_a / (rhogas[g.active] * H) / alpha
 

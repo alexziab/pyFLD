@@ -59,9 +59,6 @@ class RadiativeEnvironment(fl._GenericFluid):
     """
 
     E0 = tb.T_to_Er(10*u.K).to('erg/cm3')
-    rho   = None
-    prs   = None
-    eng   = None
     Qirr  = None
     Qvisc = None
     irradiation = False
@@ -137,7 +134,8 @@ class RadiativeEnvironment(fl._GenericFluid):
             Vertically integrated surface density (phi, R)
         """
         self._push_region("get_surface_density")
-        sigma = tb.get_surface_density(self.grid, self.rho[self.grid.active])
+        sigma = tb.get_surface_density(self.grid,
+                                    self.rho[self.grid.active]) # type: ignore[operator]
         self._pop_region()
         return sigma
 

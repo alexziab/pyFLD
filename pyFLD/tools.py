@@ -134,9 +134,10 @@ def compute_mean_opacities(wl, kabs, ksca, g, T=None,
     """
     
     wl_   = toQuantity(wl, u.cm)
-    Tmin_ = toQuantity(Tmin, u.K).to_value('K')
-    Tmax_ = toQuantity(Tmax, u.K).to_value('K')
-    if T is None: T = np.geomspace(Tmin_, Tmax_, nT) * u.K
+    Tmin_ = toQuantity(Tmin, u.K).to_value(u.K)
+    Tmax_ = toQuantity(Tmax, u.K).to_value(u.K)
+    if T is None:
+        T = u.Quantity(np.geomspace(Tmin_, Tmax_, nT), unit=u.K) # type: ignore[operator]
     Bnu, Unu = BBflux(T=T[:,None], wl=wl_) # [nT, nwl]
 
     kabs_cgs = toQuantity(kabs, u.cm**2 / u.g).to_value('cm2/g')
@@ -222,7 +223,7 @@ def toQuantity(arr, unit):
     if isQuantity(arr): return arr.to(unit)
     else: return np.array(arr) * u.Unit(unit)
 
-def toArray(q, unit=''):
+def toArray(q, unit):
     """
     Convert astropy Quantity to numpy array (removes units).
 
@@ -234,7 +235,7 @@ def toArray(q, unit=''):
     q : array-like or astropy.units.Quantity
         Input Quantity or array
     unit : str or astropy.units.Unit, optional
-        Target unit for conversion (default: '')
+        Target unit for conversion
 
     Returns
     -------
@@ -324,7 +325,7 @@ def BBflux(T=5780*u.K, wl=1e-4*u.cm):
 
     expr = np.minimum(h*c/(lam*kB*tmp), huge_exp)
 
-    constant = 2*h*c*c/lam**5
+    constant = 2*h*c*c/lam**5 # type: ignore[operator]
     B = constant / np.expm1(expr)
 
     constant_U = constant * h*c/(lam*kB*tmp*tmp)
