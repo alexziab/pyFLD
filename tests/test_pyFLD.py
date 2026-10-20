@@ -31,13 +31,13 @@ def get_cylindrical_grid(nghost=2):
     grid = fld.grid.Grid(Ri, phii, zi, geometry='cylindrical', nghost=nghost)
     return grid
 
-def get_spherical_grid(nghost=2, halfdisk=True):
+def get_spherical_grid(nghost=2, halfdisk=True, nphi=2):
     ri   = fld.grid.get_domain_with_ghosts(0.1, 10, Nx=80, log=True) * u.au
     if halfdisk:
         thi  = fld.grid.get_domain_with_ghosts(np.pi/2-0.35, np.pi/2, Nx=32)
     else:
         thi  = fld.grid.get_domain_with_ghosts(np.pi/2-0.35, np.pi/2+0.35, Nx=48)
-    phii = fld.grid.get_domain_with_ghosts(0, 2*np.pi, Nx=2)
+    phii = fld.grid.get_domain_with_ghosts(0, 2*np.pi, Nx=nphi)
     grid = fld.grid.Grid(ri, thi, phii, geometry='spherical', nghost=nghost)
     return grid
 
@@ -73,7 +73,7 @@ def test_fail_multifluid_stars():
 def test_fail_multifluid_grids():
     gas1 = build_basic_fluid(halfdisk=True) # default grid
     gas2 = build_basic_fluid(halfdisk=False) # different grid
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='same grid'):
         fld.FLD.RadiativeEnvironment([gas1, gas2], name='disk')
 
 def test_fail_multifluid_temperature():
@@ -193,7 +193,8 @@ def prep_test_radiative_line(preconditioner='ilu',
                              recompute_preconditioner=True,
                              trigger_nan=False,
                              trigger_wrong_boundary_length=False,
-                             trigger_wrong_boundary_type=False):
+                             trigger_wrong_boundary_type=False,
+                             trigger_undefined_boundary=False):
     grid = get_cartesian_grid(ncells_offdim=2)
     Gas  = fld.fluids.Gas(grid=grid, debug=True)
     E0 = 1 * u.erg / u.cm**3
@@ -210,6 +211,9 @@ def prep_test_radiative_line(preconditioner='ilu',
     vals   = [E0, 2*E0, 0, 0, 0, 0]
     if trigger_wrong_boundary_length: Box.declare_boundaries(bounds[:-1], vals)
     elif trigger_wrong_boundary_type: Box.declare_boundaries(['a']*6, vals)
+    elif trigger_undefined_boundary:
+        bounds[2] = fld.grid.BOUNDARY_UNDEFINED # y has 2 cells, so it is solved
+        Box.declare_boundaries(bounds, vals)
     else: Box.declare_boundaries(bounds, vals)
     Box.configure_solver(rtol=1e-10)
     for _ in range(5): Box.advance(dt=1e10 * u.s,
@@ -253,6 +257,9 @@ def test_radiative_line_wrong_boundary_length():
 def test_radiative_line_wrong_boundary_type():
     with pytest.raises(ValueError):
         prep_test_radiative_line(trigger_wrong_boundary_type=True)
+def test_radiative_line_undefined_boundary():
+    with pytest.raises(ValueError):
+        prep_test_radiative_line(trigger_undefined_boundary=True)
 def test_radiative_line_unknown_preconditioner():
     with pytest.raises(ValueError):
         prep_test_radiative_line(preconditioner='unknown')
@@ -263,6 +270,32 @@ def test_radiative_line_no_preconditioner():
 def test_radiative_line_preconditioner_alert():
     # still works, just throws a warning about the rescaling
     prep_test_radiative_line(preconditioner='rescaled jacobi')
+
+def prep_test_solver_failure(preconditioner):
+    # a solver that cannot converge must raise, and must not touch Er or tmp
+    grid = get_cartesian_grid(ncells_offdim=2)
+    Gas  = fld.fluids.Gas(grid=grid)
+    E0 = 1 * u.erg / u.cm**3
+    Gas.set_density(1 * u.g/u.cm**3 * np.ones(grid.shape))
+    Gas.set_temperature(fld.tools.Er_to_T(E0) * np.ones(grid.shape))
+    Gas.enroll_kappaR(lambda f: 1 * u.cm**2 / u.g)
+    Gas.enroll_kappaP(lambda f: 1 * u.cm**2 / u.g)
+    Gas.setup()
+    Box = fld.FLD.RadiativeEnvironment([Gas], verbose=False, preconditioner=preconditioner)
+    val, ref = fld.grid.BOUNDARY_FIXEDVALUE, fld.grid.BOUNDARY_REFLECTIVE
+    Box.declare_boundaries([val, val, ref, ref, ref, ref], [E0, 2*E0, 0, 0, 0, 0])
+    Box.configure_solver(rtol=1e-14, maxiter=1)
+    Er_old, tmp_old = 1 * Box.Er, 1 * Box.tmp
+    with pytest.raises(RuntimeError):
+        Box.advance(dt=1e10 * u.s)
+    assert np.array_equal(Box.Er, Er_old)
+    assert np.array_equal(Box.tmp, tmp_old)
+    assert np.array_equal(Gas.tmp, tmp_old)
+
+def test_solver_failure_jacobi():
+    prep_test_solver_failure('jacobi')
+def test_solver_failure_rescaled_jacobi():
+    prep_test_solver_failure('rescaled jacobi')
 
 def test_flux_limiter_kley():
     print(fld.tools.flux_limiter_kley(0))
@@ -363,6 +396,162 @@ def test_hydrostatic_equilibrium():
     prep_test_hydrostatic_equilibrium(approx=True)
     prep_test_hydrostatic_equilibrium(approx=False)
 
+def build_phi_varying_disk(nphi):
+    # full disk (both hemispheres) where every phi slice has a different surface density
+    grid = get_spherical_grid(halfdisk=False, nphi=nphi)
+    Gas  = fld.fluids.Gas(grid=grid, star=get_basic_star())
+    Gas.enroll_kappaP(lambda f: 1.0 * u.cm**2/u.g)
+    Gas.enroll_kappaR(lambda f: 1.0 * u.cm**2/u.g)
+    g = grid
+    q, h, sigma0 = -1, 0.05, 100 * u.g/u.cm**2
+    T0 = 627.6448542468106 * u.K * (h/0.05) ** 2
+    R = g.R.to('au')
+    rho0 = sigma0 / (np.sqrt(2*np.pi) * h*const.au)
+    rho = rho0 * R.to_value('au') ** -1.5 * np.exp(-0.5*(g.z/(h*R))**2)
+    phi_factor = 1 + np.arange(g.NX3_TOT) # distinct in every phi cell
+    Gas.set_density(rho * phi_factor[:,None,None])
+    Gas.set_temperature(T0 * R.to_value('au') ** q * np.ones(g.shape))
+    Gas.setup()
+    return Gas, phi_factor[g.act3]
+
+def test_hydrostatic_equilibrium_midplane_symmetry():
+    # vertically isothermal, so the equilibrium must be mirror-symmetric about the midplane
+    Gas, _ = build_phi_varying_disk(nphi=2)
+    g = Gas.grid
+    rho = Gas.compute_hydrostatic_equilibrium()[g.active].to_value('g/cm3')
+    top, bottom = rho[:, :g.mid+1], rho[:, g.mid+1:]
+    assert top.shape == bottom.shape
+    assert np.allclose(top[:, ::-1], bottom, rtol=1e-10, atol=0) # atol=0: densities are ~1e-10
+
+def test_hydrostatic_equilibrium_phi_slices():
+    # each phi slice must keep its own surface density, and the vertical
+    # structure only depends on temperature, so slices differ by a constant factor
+    Gas, phi_factor = build_phi_varying_disk(nphi=4)
+    g = Gas.grid
+    sigma_old = Gas.get_surface_density()
+    Gas.enforce_hydrostatic_equilibrium()
+    sigma_new = Gas.get_surface_density()
+    assert np.allclose(sigma_new, sigma_old, rtol=1e-10, atol=0)
+
+    rho = Gas.rho[g.active].to_value('g/cm3')
+    ratio = rho / rho[0] # relative to the first phi slice
+    expected = (phi_factor / phi_factor[0])[:,None,None] * np.ones_like(ratio)
+    assert np.allclose(ratio, expected, rtol=1e-10, atol=0)
+
+def build_hemisphere_fluid(fluid_type, thi):
+    # vertically isothermal disk on a spherical grid with the given theta interfaces
+    ri   = fld.grid.get_domain_with_ghosts(0.5, 5, Nx=24, log=True) * u.au
+    phii = fld.grid.get_domain_with_ghosts(0, 2*np.pi, Nx=1)
+    grid = fld.grid.Grid(ri, thi, phii, geometry='spherical')
+    Fluid = (fld.fluids.Gas if fluid_type == 'gas' else fld.fluids.Dust)(grid=grid, star=get_basic_star())
+    Fluid.enroll_kappaR(lambda f: 1.0 * u.cm**2/u.g)
+    Fluid.enroll_kappaP(lambda f: 1.0 * u.cm**2/u.g)
+    Fluid.enroll_alpha(lambda f: 1e-3)
+    R = grid.R.to('au')
+    rho = 1e-10 * u.g/u.cm**3 * (R/u.au)**-2.25 * np.exp(-0.5*(grid.z/(0.05*R))**2)
+    Fluid.set_density(rho * np.ones(grid.shape))
+    Fluid.set_temperature(100 * u.K * (R/u.au)**-0.5 * np.ones(grid.shape))
+    Fluid.setup()
+    return Fluid
+
+def prep_test_bottom_halfdisk_mirrors_top(fluid_type):
+    top = build_hemisphere_fluid(fluid_type, fld.grid.get_domain_with_ghosts(np.pi/2-0.3, np.pi/2, Nx=16))
+    bot = build_hemisphere_fluid(fluid_type, fld.grid.get_domain_with_ghosts(np.pi/2, np.pi/2+0.3, Nx=16))
+    rho_top = top.compute_hydrostatic_equilibrium(rhogas=100*top.rho)[top.grid.active].to_value('g/cm3')
+    rho_bot = bot.compute_hydrostatic_equilibrium(rhogas=100*bot.rho)[bot.grid.active].to_value('g/cm3')
+    assert np.allclose(rho_bot[:, ::-1], rho_top, rtol=1e-8, atol=0)
+
+def test_bottom_halfdisk_mirrors_top_gas():
+    prep_test_bottom_halfdisk_mirrors_top('gas')
+def test_bottom_halfdisk_mirrors_top_dust():
+    prep_test_bottom_halfdisk_mirrors_top('dust')
+
+def test_grid_mid():
+    def mk(thi): return fld.grid.Grid(fld.grid.get_domain_with_ghosts(1, 2, Nx=4) * u.au, thi,
+                                      fld.grid.get_domain_with_ghosts(0, 2*np.pi, Nx=1), geometry='spherical')
+    top = mk(fld.grid.get_domain_with_ghosts(np.pi/2-0.3, np.pi/2, Nx=8))
+    bot = mk(fld.grid.get_domain_with_ghosts(np.pi/2, np.pi/2+0.3, Nx=8))
+    assert top.mid == top.NX2-1 and bot.mid == 0
+    # full disk with finer cells below the midplane: mid must still be the last cell above it
+    up = np.linspace(np.pi/2-0.35, np.pi/2, 17)
+    lo = np.linspace(np.pi/2, np.pi/2+0.2, 21)[1:]
+    full = mk(fld.grid.add_ghost_cells(np.concatenate([up, lo])))
+    act = full.x2[full.act2]
+    assert act[full.mid] < np.pi/2 < act[full.mid+1]
+
+def test_alert_no_midplane_interface(capsys):
+    def mk(thi): fld.grid.Grid(fld.grid.get_domain_with_ghosts(1, 2, Nx=4) * u.au, thi,
+                               fld.grid.get_domain_with_ghosts(0, 2*np.pi, Nx=1), geometry='spherical')
+    wall, center = 'no cell interface at pi/2', 'no cell center at pi/2'
+    def warnings_for(thi):
+        mk(thi)
+        out = capsys.readouterr().out
+        return wall in out, center in out
+    # half disk short of pi/2: neither an interface nor a center at the midplane
+    assert warnings_for(fld.grid.get_domain_with_ghosts(np.pi/2-0.3, np.pi/2-0.01, Nx=8)) == (True, True)
+    # full disk, asymmetric with an odd number of cells: same
+    assert warnings_for(fld.grid.get_domain_with_ghosts(np.pi/2-0.3, np.pi/2+0.25, Nx=9)) == (True, True)
+    # full disk, symmetric with an odd number of cells: a cell is centered on pi/2
+    assert warnings_for(fld.grid.get_domain_with_ghosts(np.pi/2-0.3, np.pi/2+0.3, Nx=9)) == (True, False)
+    # full disk, symmetric with an even number of cells: interface at pi/2, no warnings
+    assert warnings_for(fld.grid.get_domain_with_ghosts(np.pi/2-0.3, np.pi/2+0.3, Nx=8)) == (False, False)
+
+def test_rho_eff_follows_eps():
+    frac = {'eps': 0.5} # mutable, so the enrolled fraction can change after setup
+    Gas = build_basic_fluid('gas')
+    Gas.enroll_effective_fraction(lambda f: frac['eps'])
+    Gas.setup()
+    rho_raw = 1 * Gas.rho
+    def prs_expected(): return Gas.rho_eff * Gas.tmp * fld.tools.Rgas / Gas.mu
+    assert np.allclose(Gas.rho_eff, 0.5 * rho_raw, rtol=1e-14, atol=0)
+    assert np.allclose(Gas.prs, prs_expected(), rtol=1e-14, atol=0)
+
+    frac['eps'] = 0.25 # e.g. a temperature-dependent fraction that changed
+    Gas.refresh()
+    assert np.allclose(Gas.rho, rho_raw, rtol=1e-14, atol=0) # raw density untouched
+    assert np.allclose(Gas.rho_eff, 0.25 * rho_raw, rtol=1e-14, atol=0)
+    assert np.allclose(Gas.prs, prs_expected(), rtol=1e-14, atol=0) # pressure follows eps
+    assert np.allclose(Gas.eng, Gas.prs / (Gas.gamma-1), rtol=1e-14, atol=0)
+
+def test_rho_eff_before_setup():
+    Gas = build_basic_fluid('gas')
+    assert Gas.rho_eff is None # eps is not known before setup()
+
+def build_fraction_fluid(fluid_type, eps):
+    Fluid = build_basic_fluid(fluid_type)
+    Fluid.enroll_effective_fraction(lambda f: eps)
+    if fluid_type == 'dust': Fluid.enroll_alpha(lambda f: 1e-3)
+    Fluid.setup()
+    rhogas = 100 * Fluid.rho if fluid_type == 'dust' else None
+    return Fluid, rhogas
+
+def prep_test_hydrostatic_equilibrium_conserves_raw_mass(fluid_type):
+    # repeated calls must not drain the raw mass when eps < 1
+    Fluid, rhogas = build_fraction_fluid(fluid_type, eps=0.5)
+    g = Fluid.grid
+    sigma_raw_old = fld.tools.get_surface_density(g, Fluid.rho[g.active])
+    for _ in range(3): Fluid.enforce_hydrostatic_equilibrium(rhogas=rhogas)
+    sigma_raw_new = fld.tools.get_surface_density(g, Fluid.rho[g.active])
+    assert np.allclose(sigma_raw_new, sigma_raw_old, rtol=1e-10, atol=0)
+
+def test_hydrostatic_equilibrium_conserves_raw_mass_gas():
+    prep_test_hydrostatic_equilibrium_conserves_raw_mass('gas')
+def test_hydrostatic_equilibrium_conserves_raw_mass_dust():
+    prep_test_hydrostatic_equilibrium_conserves_raw_mass('dust')
+
+def prep_test_hydrostatic_equilibrium_independent_of_eps(fluid_type):
+    # eps only scales the active fraction; the raw vertical structure must not depend on it
+    Fluid1, rhogas = build_fraction_fluid(fluid_type, eps=1.0)
+    Fluid2, _      = build_fraction_fluid(fluid_type, eps=0.5)
+    rho1 = Fluid1.compute_hydrostatic_equilibrium(rhogas=rhogas).to_value('g/cm3')
+    rho2 = Fluid2.compute_hydrostatic_equilibrium(rhogas=rhogas).to_value('g/cm3')
+    assert np.allclose(rho2, rho1, rtol=1e-10, atol=0)
+
+def test_hydrostatic_equilibrium_independent_of_eps_gas():
+    prep_test_hydrostatic_equilibrium_independent_of_eps('gas')
+def test_hydrostatic_equilibrium_independent_of_eps_dust():
+    prep_test_hydrostatic_equilibrium_independent_of_eps('dust')
+
 def prep_test_compute_surface_density_gas(halfdisk=True):
     Gas = build_basic_fluid('gas', halfdisk=halfdisk)
     g = Gas.grid
@@ -427,6 +616,7 @@ def test_dtau():
     Gas.setup()
 
     Gas.rho[:] = rho
+    Gas.update_effective_density() # rho was modified directly after setup
     Gas.compute_cell_optical_depth()
 
     idx = Gas.grid.ibeg
@@ -902,3 +1092,118 @@ def test_fail_NaN_in_matrix():
     Disk.rho[g.kbeg,g.jbeg,g.ibeg] = np.nan # force a NaN in the matrix
     with pytest.raises(ValueError):
         Disk._build_matrix(dt=1*u.yr)
+
+# ---------------------------------------------------------------------------
+# remaining code paths (fallbacks, optional dependencies, error branches)
+# ---------------------------------------------------------------------------
+
+def build_viscous_disk(implicit_viscosity):
+    Gas = build_basic_fluid('gas', viscosity=True)
+    Gas.enroll_alpha(lambda f: 1e-2)
+    Gas.setup()
+    Disk = fld.FLD.RadiativeEnvironment([Gas], implicit_viscosity=implicit_viscosity)
+    bounds = [fld.grid.BOUNDARY_FIXEDVALUE] * 6
+    bounds[3] = fld.grid.BOUNDARY_REFLECTIVE # midplane
+    Disk.declare_boundaries(bounds, [fld.tools.T_to_Er(10*u.K)] * 6)
+    return Disk
+
+def test_implicit_viscosity_second_order():
+    # implicit and explicit viscosity solve the same equations, so for steps shorter
+    # than the viscous heating time their results differ only at second order in dt
+    def dT(implicit, dt):
+        Disk = build_viscous_disk(implicit)
+        T0 = 1 * Disk.tmp
+        Disk.advance(dt=dt*u.yr)
+        return (Disk.tmp - T0)[Disk.grid.active].to_value('K')
+    diff = [np.abs(dT(True, dt) - dT(False, dt)).max() for dt in (2e-3, 1e-3)]
+    assert 3 < diff[0] / diff[1] < 5
+
+def test_irradiation_without_numexpr(monkeypatch):
+    # the plain numpy path must give the same heating as the numexpr path
+    wl, kabs, ksca, g_asy = get_opacity_arrays()
+    gray = build_basic_fluid('gas', irradiation='gray')
+    star = get_basic_star(wl=wl)
+    freqdep = fld.fluids.Dust(grid=get_spherical_grid(), star=star, irradiation='freqdep',
+                              kabs_wl=kabs, ksca_wl=ksca, g_wl=g_asy)
+    freqdep.set_density(1e-10 * u.g/u.cm**3 * np.ones(freqdep.grid.shape))
+    freqdep.set_temperature(100 * u.K * np.ones(freqdep.grid.shape))
+    for Fluid in (gray, freqdep):
+        Fluid.setup()
+        Disk = fld.FLD.RadiativeEnvironment([Fluid])
+        Disk.compute_Qirr()
+        Q_default = 1 * Disk.Qirr
+        monkeypatch.setattr(fld.FLD, '_have_numexpr', False)
+        Disk.compute_Qirr()
+        monkeypatch.undo()
+        assert np.allclose(Disk.Qirr, Q_default, rtol=1e-12, atol=0*Q_default.unit)
+
+def test_ilu_failure_falls_back_to_jacobi(monkeypatch, capsys):
+    def failing_spilu(*args, **kwargs): raise RuntimeError("Factor is exactly singular")
+    monkeypatch.setattr(fld.FLD.sp.linalg, 'spilu', failing_spilu)
+    prep_test_radiative_line(preconditioner='ilu') # still matches the analytical profile
+    assert 'ILU failed, falling back to Jacobi' in capsys.readouterr().out
+
+def test_direct_solver_failure(monkeypatch):
+    monkeypatch.setattr(fld.FLD.sp.linalg, 'spsolve', lambda A, b: np.full_like(b, np.nan))
+    prep_test_solver_failure('none')
+
+def test_fail_boundary_value():
+    Gas = build_basic_fluid()
+    Gas.setup()
+    Disk = fld.FLD.RadiativeEnvironment([Gas])
+    with pytest.raises(ValueError):
+        Disk.declare_boundaries([fld.grid.BOUNDARY_FIXEDVALUE] * 6, [2.0] * 6) # must be a Quantity or 0
+
+def test_single_wavelength_star():
+    star = fld.star.Star(L=1*u.L_sun, wl=[1e-4])
+    assert star.nbins == 1
+    assert np.allclose(star.L_wl, star.L, rtol=1e-14)
+
+def test_fail_star_poor_spectrum():
+    with pytest.raises(ValueError): # 1-2 um misses most of the stellar luminosity
+        fld.star.Star(L=1*u.L_sun, wl=[1e-4, 2e-4])
+
+def test_radmc_helper_wavelength_array():
+    wl = fld.radmc_helper.get_wavelength_array(wl_min=0.1*u.um, wl_max=1*u.cm, Npts=50, refine_10um=False)
+    assert wl.unit == u.um and wl.size == 50
+    assert np.isclose(wl[0], 0.1*u.um) and np.isclose(wl[-1], 1*u.cm)
+    with pytest.raises(ValueError): # refined 7-25 um band outside the requested range
+        fld.radmc_helper.get_wavelength_array(wl_min=0.1*u.um, wl_max=20*u.um)
+
+def test_fail_radmc_helper_read_empty_dir(tmp_path):
+    pytest.importorskip('radmc3dPy')
+    with pytest.raises(RuntimeError):
+        fld.radmc_helper.read_and_format_radmc_data(dirc=str(tmp_path))
+
+def test_flux_limiter_kley_scalar_and_array():
+    R = np.array([0.0, 1.0, 2.0, 3.0, 100.0])
+    assert np.allclose([fld.tools.flux_limiter_kley(r) for r in R], fld.tools.flux_limiter_kley(R), rtol=1e-14)
+    assert np.isclose(fld.tools.flux_limiter_kley(1e8) * 1e8, 1, rtol=1e-3) # free-streaming limit: lambda -> 1/R
+
+def test_alpha_Cecil_Flock_2024():
+    class Foo: pass
+    f = Foo(); f.tmp = np.array([100., 900., 2000.]) * u.K
+    alpha = fld.tools.get_alpha_Cecil_Flock_2024(f)
+    assert np.allclose(alpha, [1e-3, 0.5*(1e-3+0.1), 0.1], rtol=1e-6)
+
+def test_fail_try_reading_writing(tmp_path):
+    with pytest.raises(ValueError):
+        fld.tools.try_reading(str(tmp_path / 'missing.dbl'), force=True)
+    assert fld.tools.try_reading(str(tmp_path / 'missing.dbl')) is None # optional file
+    with pytest.raises(ValueError):
+        fld.tools.try_writing(1 * u.cm, str(tmp_path / 'x.dbl')) # Quantity without unit
+
+def test_fail_hydrostatic_equilibrium_without_midplane_interface():
+    # full disk with pi/2 inside a cell
+    Gas = build_hemisphere_fluid('gas', fld.grid.get_domain_with_ghosts(np.pi/2-0.3, np.pi/2+0.25, Nx=9))
+    with pytest.raises(ValueError):
+        Gas.compute_hydrostatic_equilibrium()
+
+def test_fail_mean_opacities_without_spectral_data():
+    grid = get_spherical_grid()
+    for star in (get_basic_star(), get_basic_star(wl=get_opacity_arrays()[0])):
+        Gas = fld.fluids.Gas(grid=grid, star=star) # no kappa enrolled
+        Gas.set_density(1e-10 * u.g/u.cm**3 * np.ones(grid.shape))
+        Gas.set_temperature(100 * u.K * np.ones(grid.shape))
+        with pytest.raises(ValueError): # no star.wl, or no kabs_wl/ksca_wl/g_wl
+            Gas.setup()
