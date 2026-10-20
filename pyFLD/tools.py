@@ -465,7 +465,7 @@ def get_tau0_Flock_2019(fluid):
         Optical depth at innermost part of domain (φ, θ, ibeg)
     """
     g, s = fluid.grid, fluid.star
-    return (fluid.rho * fluid.eps * fluid.kappaPstar * (g.R-3*s.R))[:, :, g.ibeg]
+    return (fluid.rho_eff * fluid.kappaPstar * (g.R-3*s.R))[:, :, g.ibeg]
 
 def get_col0_Flock_2019(fluid):
     """
@@ -485,7 +485,7 @@ def get_col0_Flock_2019(fluid):
         Fluid column at innermost part of domain (φ, θ, ibeg)
     """
     g, s = fluid.grid, fluid.star
-    return (fluid.rho * fluid.eps * (g.R-3*s.R))[:, :, g.ibeg]
+    return (fluid.rho_eff * (g.R-3*s.R))[:, :, g.ibeg]
 
 def get_fraction_Isella_Natta_2005(fluid):
     """

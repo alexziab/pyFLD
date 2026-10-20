@@ -27,6 +27,7 @@ class _GenericFluid:
     """
 
     rho   = None
+    rho_eff = None
     tmp   = None
     eps   = None
     name  = None
@@ -183,18 +184,30 @@ class _GenericFluid:
 
         self._pop_region()
 
+    def update_effective_density(self):
+        """
+        Update the effective density, rho_eff = eps * rho.
+
+        ``rho`` is the raw density (what is set, stored, and conserved), and
+        ``eps`` the effective fraction, which can vary with e.g. temperature.
+        Called by compute_fractions() (eps changed) and by
+        enforce_hydrostatic_equilibrium() (rho changed).
+        """
+        self._push_region("update_effective_density")
+        self.rho_eff = self.eps * self.rho # type: ignore[operator]
+        self._pop_region()
+
     def update_pressure_energy(self):
         """
         Update pressure and internal energy from density and temperature.
 
         Computes pressure and internal energy density using the ideal gas law
-        and thermodynamic relations. Called automatically by setup() and after
-        temperature updates.
+        and thermodynamic relations, based on the effective density (rho_eff).
+        Called automatically by setup(), refresh(), and after temperature updates.
         """
         self._push_region("update_pressure_energy")
 
-        rho = self.eps * self.rho # type: ignore[operator]
-        self.prs = rho * self.tmp * tb.Rgas / self.mu
+        self.prs = self.rho_eff * self.tmp * tb.Rgas / self.mu
         self.eng = self.prs / (self.gamma-1)
 
         self._pop_region()
@@ -220,8 +233,7 @@ class _GenericFluid:
         self._push_region("get_surface_density")
 
         act = self.grid.active
-        rho = self.eps * self.rho # type: ignore[operator]
-        sig = tb.get_surface_density(self.grid, rho[act])
+        sig = tb.get_surface_density(self.grid, self.rho_eff[act])
 
         self._pop_region()
         return sig
@@ -318,14 +330,54 @@ class _GenericFluid:
 
         Calls the enrolled effective fraction function to compute eps at all
         grid points. Used internally during setup and updates. Updates the eps
-        attribute in-place.
+        attribute in-place, and rho_eff along with it.
         """
         self._push_region("compute_fractions")
         self.eps = self.get_effective_fraction(self)
+        self.update_effective_density()
         self._pop_region()
 
     def compute_hydrostatic_equilibrium(self, rhogas=None, uf=0):
         raise NotImplementedError # to be defined in child classes
+
+    def _get_disk_side(self):
+        """
+        Determine which part of the disk the (spherical) grid covers.
+
+        Returns 'top' or 'bottom' for a half-disk and 'both' for a full disk,
+        which must have pi/2 as a cell interface within the active cells.
+        """
+        g = self.grid
+        if g.geometry not in gr.aux_spherical: raise ValueError("Only works in spherical coordinates")
+        if tb.is_halfdisk(g):
+            last = g.x2i[g.act2i][-1]
+            return 'top' if np.isclose(last, np.pi/2) else 'bottom'
+        if not np.any(np.isclose(g.x2i[g.act2i], np.pi/2)):
+            raise ValueError("When dual-sided, grid must contain pi/2 as a cell interface within active cells. Alternatively, use a half-disk grid.")
+        return 'both'
+
+    def _finalize_equilibrium(self, rho_new, sig, uf):
+        """
+        Final step shared by all compute_hydrostatic_equilibrium() implementations.
+
+        Rescales rho_new (active cells only) to the surface density sig, floors it,
+        under-relaxes against the current density with uf, fills the ghost cells,
+        and checks for NaNs. Returns the density including ghost cells.
+        """
+        g = self.grid
+        uden = u.g/u.cm**3
+        sig_new = tb.get_surface_density(g, rho_new)
+        f = sig/sig_new # enforce correct surface density: f(φ,r)
+        rho_new = np.maximum(rho_new * f[:,None], tb.tiny * uden)
+        rho_new[np.isnan(rho_new)] = tb.tiny * uden
+
+        rho_updated = np.zeros_like(self.rho)
+        rho_updated[g.active] = rho_new * (1-uf) + self.rho[g.active] * uf # type: ignore[index]
+        self.enforce_boundaries(rho_updated) # boundaries, with power-law extrapolation
+
+        if np.any(np.isnan(rho_updated)):
+            raise ValueError(f"{self.get_prefix()}: NaNs found in hydrostatic equilibrium density")
+        return rho_updated
 
     def enforce_hydrostatic_equilibrium(self, rhogas=None, uf=0):
         """
@@ -355,6 +407,7 @@ class _GenericFluid:
         """
         self._push_region("enforce_hydrostatic_equilibrium")
         self.rho = self.compute_hydrostatic_equilibrium(rhogas=rhogas, uf=uf)
+        self.update_effective_density() # new rho, same eps
         self.update_pressure_energy()
         self._pop_region()
 
@@ -854,12 +907,19 @@ class _RadiativeFluid(_GenericFluid):
         self._push_region("compute_cell_optical_depth")
         if self.irradiation == 'gray': kappa = self.kappaPstar
         else: kappa = self.kabs_wl[:,None,None,None] # type: ignore[operator]
-        self.dtau = (self.eps * kappa * self.rho * self.grid.dx1)
+        self.dtau = (kappa * self.rho_eff * self.grid.dx1)
         self._pop_region()
 
     def refresh(self):
+        """
+        Recompute all temperature-dependent quantities at the current temperature.
+
+        Order matters: eps and rho_eff first, so that opacities, pressure/energy,
+        and optical depths all see the same effective density.
+        """
+        self.compute_fractions() # eps and rho_eff
         self.compute_opacities()
-        self.compute_fractions()
+        self.update_pressure_energy()
         if self.irradiation:
             self.compute_cell_optical_depth()
             self.compute_tau0()
@@ -874,7 +934,7 @@ class _RadiativeFluid(_GenericFluid):
         # skip getters, derivatives, and objects
         skipped_keys = ['get_col0', 'get_tau0', 'get_alpha',
                         'get_kappaP', 'get_kappaR', 'get_kappaPstar',
-                        'prs', 'eng', 'Er', 'grid', 'star', 'dtau']
+                        'prs', 'eng', 'Er', 'grid', 'star', 'dtau', 'rho_eff']
 
         tb.extract_and_store_params(self, dirc=model_dirc,
                                     skipped_keys=skipped_keys)
@@ -916,6 +976,7 @@ class _RadiativeFluid(_GenericFluid):
         self._push_region("_rebuild_after_read")
 
         # from GenericFluid.setup()
+        self.update_effective_density() # from the stored eps, not recomputed
         self.update_pressure_energy()
         self.Er  = tb.aR * self.tmp ** 4 # type: ignore[operator]
 
@@ -1029,13 +1090,7 @@ class Dust(_RadiativeFluid):
         rho_a = self.grain_rho * self.grain_size
 
         g = self.grid
-        if g.geometry not in gr.aux_spherical: raise ValueError("Only works in spherical coordinates")
-        first, last = g.x2i[g.act2i][[0, -1]]
-        halfdisk = np.isclose(first, np.pi/2) or np.isclose(last, np.pi/2)
-        if halfdisk: side = 'top' if np.isclose(last, np.pi/2) else 'bottom'
-        else: side = 'both'
-        if not halfdisk and not np.any(np.isclose(g.x2i[g.act2i], np.pi/2)):
-            raise ValueError("When dual-sided, grid must contain pi/2 as a cell interface within active cells. Alternatively, use a half-disk grid.")
+        side = self._get_disk_side()
 
         # below, most quantities only contain active cells
         R  = g.R[g.act2, g.act1]
@@ -1046,9 +1101,9 @@ class Dust(_RadiativeFluid):
 
         # in case alpha was a single value, we need to broadcast to 3D, then keep active cells
         alpha = (tb.atleast_nd(self.get_alpha(self), d=3) * np.ones(g.shape))[g.active]
-        cs2 = (self.prs/self.rho)[g.active] # still fine
+        cs2 = (tb.Rgas * self.tmp / self.mu)[g.active] # still fine
         H   = np.sqrt(cs2) / OmegaK
-        sig = self.get_surface_density() # only contains active cells!
+        sig = tb.get_surface_density(g, self.rho[g.active]) # type: ignore[index] # raw (eps-independent), to avoid generating mass
         sig_gas = tb.get_surface_density(g, rhogas[g.active])
         zH  = (z / H).to_value('') # shape: nx3, nx2, nx1
 
@@ -1060,7 +1115,7 @@ class Dust(_RadiativeFluid):
 
         def integrate(start, end, step):
             lneps = np.zeros(shape) # temporary array
-            s_ = np.s_[:, mid if step < 0 else mid+1]
+            s_ = np.s_[:, start] # midplane cell of this half
 
             lneps[s_] = np.log(sig/sig_gas * np.sqrt(1 + St_a[s_])) #midplane
             for j in range(start, end, step): # from midplane to pole
@@ -1079,24 +1134,14 @@ class Dust(_RadiativeFluid):
                 new = np.minimum(new, lneps[:,j]) # prevent increase
                 lneps[:,j+step] = tb.get_capped(new, log=True) # cap values
             return np.exp(lneps) * rhogas[g.active]
-    
-        if side == 'both' or side == 'top': # top half
+
+        if side == 'both' or side == 'top': # top half, from mid upwards
             rho_new[:, :mid+1] = integrate(mid, 0, -1)[:, :mid+1]
-        if side == 'both' or side == 'bottom': # bottom half
-            rho_new[:, mid+1:] = integrate(mid+1, g.NX2-1, 1)[:, mid+1:]
+        if side == 'both' or side == 'bottom': # bottom half, from its midplane cell downwards
+            j0 = mid if side == 'bottom' else mid+1
+            rho_new[:, j0:] = integrate(j0, g.NX2-1, 1)[:, j0:]
 
-        sig_new = tb.get_surface_density(g, rho_new)
-        f = sig/sig_new # enforce correct surface density: f(φ,r)
-        rho_new = np.maximum(rho_new * f[:,None], tb.tiny * uden)
-        rho_new[np.isnan(rho_new)] = tb.tiny * uden
-
-        rho_updated = np.zeros_like(self.rho)
-        rho_updated[g.active] = rho_new * (1-uf) + self.rho[g.active] * uf # type: ignore[assignment]
-        self.enforce_boundaries(rho_updated, powerlaw_extrapolation=True) # boundaries
-
-        nans = np.isnan(rho_updated)
-        if np.any(nans):
-            raise ValueError(f"{self.get_prefix()}: NaNs found in hydrostatic equilibrium density")
+        rho_updated = self._finalize_equilibrium(rho_new, sig, uf)
 
         self._pop_region()
 
@@ -1161,7 +1206,7 @@ class Gas(_RadiativeFluid):
         Arguments
         ----------
         rhogas : array-like [g/cm^3] or astropy.units.Quantity, optional
-            Not used for gas fluids. Included for API compatibility.
+            Not used for gas fluids. Included for compatibility.
             (default: None)
         uf : float [0-1], optional
             Under-relaxation factor for convergence. (default: 0)
@@ -1180,13 +1225,7 @@ class Gas(_RadiativeFluid):
         self._push_region("compute_hydrostatic_equilibrium")
 
         g = self.grid
-        if g.geometry not in gr.aux_spherical: raise ValueError("Only works in spherical coordinates")
-        first, last = g.x2i[g.act2i][[0, -1]]
-        halfdisk = np.isclose(first, np.pi/2) or np.isclose(last, np.pi/2)
-        if halfdisk: side = 'top' if np.isclose(last, np.pi/2) else 'bottom'
-        else: side = 'both'
-        if not halfdisk and not np.any(np.isclose(g.x2i[g.act2i], np.pi/2)):
-            raise ValueError("When dual-sided, grid must contain pi/2 as a cell interface within active cells. Alternatively, use a half-disk grid.")
+        side = self._get_disk_side()
 
         # below, most quantities only contain active cells
         r  = g.x1[g.act1]
@@ -1196,9 +1235,9 @@ class Gas(_RadiativeFluid):
         OmegaK = np.sqrt(GM/R**3)
         mid = g.mid
 
-        cs2 = (self.prs/self.rho)[g.active]
+        cs2 = (tb.Rgas * self.tmp / self.mu)[g.active]
         H   = np.sqrt(cs2) / OmegaK
-        sig = self.get_surface_density() # only contains active cells!
+        sig = tb.get_surface_density(g, self.rho[g.active]) # type: ignore[index] # raw (eps-independent), to avoid generating mass
 
         ulen = u.au
         uden = u.g/u.cm**3
@@ -1216,8 +1255,7 @@ class Gas(_RadiativeFluid):
 
         def integrate(start, end, step):
             lnrho = np.zeros(rho_.shape) # temporary array
-            offset = 2 if side == 'both' else 1
-            s_ = np.s_[:, mid:mid+offset] # slice for midplane
+            s_ = np.s_[:, start:start+1] # midplane cell of this half (kept 3D for broadcasting)
             lnrho[s_] = ln(sig[:,None,:] / np.sqrt(2*np.pi) / H[s_] / uden) # midplane
             for j in range(start, end, step): # from midplane to pole (we slice in θ)
                 delta_th = th[j+step]-th[j]
@@ -1239,25 +1277,15 @@ class Gas(_RadiativeFluid):
                 new = np.minimum(new, lnrho[:,j]) # prevent increase
                 lnrho[:,j+step] = tb.get_capped(new, log=True) # floor small values
             return np.exp(lnrho) * uden
-    
-        if side == 'both' or side == 'top': # top half
+
+        if side == 'both' or side == 'top': # top half, from mid upwards
             rho_new[:, :mid+1] = integrate(mid, 0, -1)[:, :mid+1]
-        if side == 'both' or side == 'bottom': # bottom half
-            rho_new[:, mid+1:] = integrate(mid+1, g.NX2-1, 1)[:, mid+1:]
+        if side == 'both' or side == 'bottom': # bottom half, from its midplane cell downwards
+            j0 = mid if side == 'bottom' else mid+1
+            rho_new[:, j0:] = integrate(j0, g.NX2-1, 1)[:, j0:]
 
-        sig_new = tb.get_surface_density(g, rho_new)
-        f = sig/sig_new # enforce correct surface density: f(φ,r)
-        rho_new = np.maximum(rho_new * f[:,None], tb.tiny * uden)
-        rho_new[np.isnan(rho_new)] = tb.tiny * uden
+        rho_updated = self._finalize_equilibrium(rho_new, sig, uf)
 
-        rho_updated = np.zeros_like(self.rho)
-        rho_updated[g.active] = rho_new * (1-uf) + self.rho[g.active] * uf # type: ignore[assignment]
-        self.enforce_boundaries(rho_updated) # boundaries
-
-        nans = np.isnan(rho_updated)
-        if np.any(nans):
-            raise ValueError(f"{self.get_prefix()}: NaNs found in hydrostatic equilibrium density")
-        
         self._pop_region()
         return rho_updated
 

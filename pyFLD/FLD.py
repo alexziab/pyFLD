@@ -59,6 +59,9 @@ class RadiativeEnvironment(fl._GenericFluid):
     """
 
     E0 = tb.T_to_Er(10*u.K).to('erg/cm3')
+    rho   = None
+    prs   = None
+    eng   = None
     Qirr  = None
     Qvisc = None
     irradiation = False
@@ -138,20 +141,32 @@ class RadiativeEnvironment(fl._GenericFluid):
         self._pop_region()
         return sigma
 
-    def update_pressure_energy(self):
+    def refresh_from_fluids(self):
         """
-        Update pressure and internal energy from density and temperature.
+        Recompute the total density, pressure, and internal energy from the fluids.
 
-        Computes pressure using ideal gas law and internal energy density
-        using adiabatic relations. Total density already includes effective
-        fractions (eps) from all fluids.
+        Sums the stored rho_eff, prs, and eng of all fluids, so each fluid
+        contributes with its own eps, mu, and gamma. All fluids share the same
+        temperature. Called by setup(), refresh_fluids(), update_fluids(),
+        enforce_hydrostatic_equilibrium(), and _rebuild_after_read().
+        Does not refresh the fluids themselves; see refresh_fluids() for that.
         """
-        self._push_region("update_pressure_energy")
+        self._push_region("refresh_from_fluids")
 
-        self.prs = self.rho * self.tmp * tb.Rgas / self.mu
-        self.eng = self.prs / (self.gamma-1)
+        self.rho *= 0
+        self.prs *= 0
+        self.eng *= 0
+
+        for f in self.fluids:
+            self.rho += f.rho_eff
+            self.prs += f.prs
+            self.eng += f.eng
 
         self._pop_region()
+
+    def update_pressure_energy(self):
+        """Overrides the fluid version, which does not apply here; equivalent to refresh_from_fluids()."""
+        self.refresh_from_fluids()
 
     def setup(self):
         """
@@ -166,14 +181,16 @@ class RadiativeEnvironment(fl._GenericFluid):
             if not f._initialized:
                 raise ValueError(f"{self.get_prefix()}: fluid '{f.name}' is not fully initialized")
 
-        uden = u.g / u.cm**3 # in case of future cgs update
-        self.rho = np.zeros(self.grid.shape) * uden
+        # tmp and Er are initialized here only; afterwards they are evolved by
+        # advance() and copied to the fluids, so they must not be reset elsewhere
         self.tmp = 1 * self.fluids[0].tmp
         self.Er  = tb.aR * self.tmp ** 4
 
-        for f in self.fluids: self.rho += f.rho * f.eps
-        
-        self.update_pressure_energy()
+        self.rho = np.zeros(self.grid.shape) * u.Unit('g/cm3')
+        self.prs = np.zeros(self.grid.shape) * u.Unit('erg/cm3')
+        self.eng = np.zeros(self.grid.shape) * u.Unit('erg/cm3')
+
+        self.refresh_from_fluids()
         self.Qirr = np.zeros(self.grid.shape) * u.Unit('erg/(s cm3)')
         self.Qvisc = np.zeros(self.grid.shape) * u.Unit('erg/(s cm3)')
 
@@ -226,14 +243,17 @@ class RadiativeEnvironment(fl._GenericFluid):
         Arguments
         ----------
         bound : array-like, length 2*dims
-            Boundary types: FIXEDVALUE, PERIODIC, REFLECTIVE, UNDEFINED
+            Boundary types: FIXEDVALUE or REFLECTIVE. Every boundary must be
+            declared, including directions with a single cell (REFLECTIVE is
+            the natural choice there).
         val : array-like, length 2*dims
             Boundary values for FIXEDVALUE boundaries [erg/cm^3] or Quantity
 
         Raises
         ------
         ValueError
-            If arrays have wrong length or contain unrecognized types
+            If arrays have wrong length, contain unrecognized types, or
+            leave any boundary UNDEFINED
         """
         self._push_region("declare_boundaries")
 
@@ -243,10 +263,12 @@ class RadiativeEnvironment(fl._GenericFluid):
 
         recognized_boundary_values = [
             gr.BOUNDARY_FIXEDVALUE, # gr.BOUNDARY_PERIODIC,
-            gr.BOUNDARY_REFLECTIVE, gr.BOUNDARY_UNDEFINED
+            gr.BOUNDARY_REFLECTIVE,
         ]
 
-        for b in bound:
+        for i, b in enumerate(bound):
+            if b == gr.BOUNDARY_UNDEFINED:
+                raise ValueError(f"Boundary {i} is UNDEFINED; please declare all {nbounds} boundaries")
             if b not in recognized_boundary_values:
                 raise ValueError(f"Boundary type {b} is not recognized")
 
@@ -313,8 +335,8 @@ class RadiativeEnvironment(fl._GenericFluid):
         rho_kP = 1e-300 * np.ones(self.rho.shape) / u.au
 
         for f in self.fluids:
-            rho_kR += f.eps * f.kappaR * f.rho
-            rho_kP += f.eps * f.kappaP * f.rho
+            rho_kR += f.kappaR * f.rho_eff
+            rho_kP += f.kappaP * f.rho_eff
         
         DEx1 = DEx2 = DEx3 = 0 # technically 0 * self.E0 / u.au or something
         if self.solve_x1: DEx1 = np.gradient(self.Er, g.x1, edge_order=2, axis=2) * h1
@@ -480,15 +502,23 @@ class RadiativeEnvironment(fl._GenericFluid):
         ----
         iters : int or None
             Number of iterations for convergence (None for direct solver)
+
+        Raises
+        ------
+        RuntimeError
+            If the iterative solver does not converge, or the direct solver
+            returns non-finite values. No state (Er, tmp) is modified.
         """
 
         self._push_region("_solve_system")
         g = self.grid
         act = g.active
 
-        if self._precondition and self.preconditioner.find('rescaled') >= 0:
+        # only M and B are rescaled; self.Er is never modified here
+        rescaled = self._precondition and 'rescaled' in self.preconditioner
+        if rescaled:
             self._compute_preconditioner()
-            self._scale_arrays(E=self.Er)
+            self._scale_arrays()
 
         M = self.M[self.Mactive]
         diagonals = [M[0].flatten()]
@@ -551,8 +581,9 @@ class RadiativeEnvironment(fl._GenericFluid):
             self._logging(f"Solving with {solver}...")
             kwargs = dict(M=self.Mat, rtol=rtol, maxiter=maxiter, callback=cb)
             if guess: # provide Erad as initial guess
-                x0 = self.Er[act].to_value(self.E0).flatten()
-                kwargs['x0'] = x0
+                x0 = self.Er[act].to_value(self.E0)
+                if rescaled: x0 = x0 * self.P[act] # guess must live in the rescaled system
+                kwargs['x0'] = x0.flatten()
 
             solve_func = {'bicgstab': sp.linalg.bicgstab, 'gmres': sp.linalg.gmres,
                             'cg': sp.linalg.cg, 'cgs': sp.linalg.cgs, 'lgmres': sp.linalg.lgmres,
@@ -563,20 +594,25 @@ class RadiativeEnvironment(fl._GenericFluid):
 
             Enew[act] = output.reshape(Bact_.shape) * self.E0
 
-            if self.preconditioner.find('rescaled') >= 0:
+            if rescaled:
                 self._unscale_arrays(E=Enew)
 
             if exit_code != 0:
-                self._log_warning(f'{solver} exited with code {exit_code}. Stopping.')
                 self._pop_region()
-                return self.Er
-            else:
-                if self.verbose: print(f'{self.get_prefix()}: Converged in {iters} iterations.')
+                raise RuntimeError(f"{self.get_prefix()}: {solver} did not converge "
+                                   f"(exit code {exit_code} after {iters} iterations). "
+                                   f"Try a smaller dt, a different preconditioner, or adjust "
+                                   f"rtol/maxiter via configure_solver().")
+            if self.verbose: print(f'{self.get_prefix()}: Converged in {iters} iterations.')
         else:
             self._logging("Solving with spsolve...")
             Enew[act] = sp.linalg.spsolve(A, Bact_.flatten()).reshape(Bact_.shape) * self.E0
             self._logging("spsolve finished.")
             self.iters = -1 # indicate direct solve
+            if not np.all(np.isfinite(Enew[act])):
+                self._pop_region()
+                raise RuntimeError(f"{self.get_prefix()}: direct solver returned non-finite values "
+                                   f"(singular matrix?).")
 
         self._pop_region()
         return Enew
@@ -604,8 +640,9 @@ class RadiativeEnvironment(fl._GenericFluid):
             Updated temperature field (with under-relaxation)
         Er : astropy.units.Quantity [erg/cm^3]
             Updated radiation energy density
-        prs, eng : astropy.units.Quantity
-            Updated pressure and internal energy from new temperature
+
+        prs and eng are updated afterwards in update_fluids(), once the
+        fluids have received the new temperature.
         """
         self._push_region("update_temperature")
 
@@ -622,7 +659,6 @@ class RadiativeEnvironment(fl._GenericFluid):
         tmp_new = num / self.Z
         self.tmp = tmp_new * (1-uf) + self.tmp * uf
         self.tmp = np.maximum(self.tmp, 3*u.K)
-        self.update_pressure_energy()
 
         self._pop_region()
 
@@ -631,13 +667,16 @@ class RadiativeEnvironment(fl._GenericFluid):
         Synchronize all fluids with updated temperature and radiation energy.
 
         Copies temperature and radiation energy from RadiativeEnvironment to
-        each fluid and recomputes pressure and internal energy.
+        each fluid and recomputes pressure and internal energy. Fractions,
+        rho_eff, and opacities are not recomputed here; that happens at the
+        start of the next advance() (or via refresh_fluids()).
         """
         self._push_region("update_fluids")
         for f in self.fluids:
             f.tmp = 1 * self.tmp
             f.update_pressure_energy()
             f.Er  = 1 * self.Er
+        self.refresh_from_fluids()
         self._pop_region()
 
     def compute_Qvisc(self):
@@ -789,13 +828,15 @@ class RadiativeEnvironment(fl._GenericFluid):
         ------
         ValueError
             If any fluid is not initialized
+        RuntimeError
+            If the linear solver fails; tmp and Er are then left unchanged
         """
 
         self._push_region("advance")
         if not self._initialized_boundaries:
-            raise ValueError(f"{self.get_prefix()}: boundaries must be declared before setup. Call 'declare_boundaries' first.")
+            raise ValueError(f"{self.get_prefix()}: boundaries must be declared before advance(). Call 'declare_boundaries' first.")
 
-        for f in self.fluids: f.refresh()
+        self.refresh_fluids()
         
         if self.irradiation: self.compute_Qirr()
         if self.viscosity: self.compute_Qvisc()
@@ -819,30 +860,36 @@ class RadiativeEnvironment(fl._GenericFluid):
         Arguments
         ----------
         rhogas : astropy.units.Quantity [g/cm^3], optional
-            Gas density field for dust settling. If None, computed from Gas fluids
-            (default: None)
+            Gas density field for dust settling. If None, computed from the Gas
+            fluids after they have been put in equilibrium (default: None)
         uf : float [0-1], optional
             Under-relaxation factor for convergence (default: 0, full update)
         """
         self._push_region("enforce_hydrostatic_equilibrium")
-        uden = u.g/u.cm**3
+        # gas first: its equilibrium is self-contained, while dust settles
+        # on top of the gas density, so dust must see the updated gas
+        gases = [f for f in self.fluids if f.isGas]
+        dusts = [f for f in self.fluids if not f.isGas]
+        for f in gases: f.enforce_hydrostatic_equilibrium(uf=uf)
         if rhogas is None:
-            rhogas = np.zeros(self.grid.shape) * uden
-            for f in self.fluids:
-                if f.isGas: rhogas += f.rho * f.eps
-        self.rho *= 0
-        for f in self.fluids:
-            f.enforce_hydrostatic_equilibrium(rhogas=rhogas, uf=uf)
-            self.rho += f.rho * f.eps # f.rho was updated above
-        
-        self.update_pressure_energy()
+            rhogas = np.zeros(self.grid.shape) * u.g/u.cm**3
+            for f in gases: rhogas += f.rho_eff
+        for f in dusts: f.enforce_hydrostatic_equilibrium(rhogas=rhogas, uf=uf)
+
+        self.refresh_from_fluids()
         self._pop_region()
 
     def refresh_fluids(self):
-        """Call refresh() on all fluids to update opacities and effective fractions.
-        Useful to call before visualizing or dumping snapshots."""
+        """
+        Call refresh() on all fluids, then update the totals.
+
+        Recomputes effective fractions, rho_eff, opacities, pressure/energy, and
+        optical depths at the current temperature. Called at the start of
+        advance(); also useful before visualizing or dumping snapshots.
+        """
         self._push_region("refresh_fluids")
         for f in self.fluids: f.refresh()
+        self.refresh_from_fluids()
         self._pop_region()
 
     def write_snapshot(self, dirc='./', name='REnv'):
@@ -878,7 +925,7 @@ class RadiativeEnvironment(fl._GenericFluid):
             if not f._initialized:
                 raise ValueError(f"{self.get_prefix()}: fluid '{f.name}' is not fully initialized")
 
-        self.update_pressure_energy()
+        self.refresh_from_fluids()
 
         self._pop_region()
 
