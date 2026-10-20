@@ -138,6 +138,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#pyFLD.tools.write_dictionary"><code class="docutils literal notranslate"><span class="pre">write_dictionary()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="#module-pyFLD">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -178,7 +179,7 @@
 <span id="pyfld-fld-module"></span><h2>pyFLD.FLD module<a class="headerlink" href="#module-pyFLD.FLD" title="Permalink to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyFLD.FLD.</span></span><span class="sig-name descname"><span class="pre">RadiativeEnvironment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fluids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preconditioner</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ilu'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constant_fluxlimiter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">implicit_viscosity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyFLD.FLD.</span></span><span class="sig-name descname"><span class="pre">RadiativeEnvironment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fluids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preconditioner</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ilu'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constant_fluxlimiter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">implicit_viscosity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">_GenericFluid</span></code></p>
 <p>Radiation hydrodynamics solver using Flux-Limited Diffusion (FLD).</p>
 <p>Collects multiple <code class="docutils literal notranslate"><span class="pre">fluids._RadiativeFluid</span></code> objects (<code class="docutils literal notranslate"><span class="pre">Gas</span></code> and <code class="docutils literal notranslate"><span class="pre">Dust</span></code>)
@@ -192,118 +193,47 @@ grid, star, and temperature field.</p>
 <li><p><strong>fluids</strong> (list of <code class="docutils literal notranslate"><span class="pre">_RadiativeFluid</span></code>) – List of <code class="docutils literal notranslate"><span class="pre">Dust</span></code> and/or <code class="docutils literal notranslate"><span class="pre">Gas</span></code> fluid objects to solve</p></li>
 <li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Enable verbose output (default: True)</p></li>
 <li><p><strong>constant_fluxlimiter</strong> (<em>bool</em><em>, </em><em>optional</em>) – Use constant flux limiter (lambda=1/3) instead of Kley formula (default: False)</p></li>
-<li><p><strong>preconditioner</strong> (<em>str</em><em>, </em><em>optional</em>) – Preconditioning method for iterative solver: ‘ilu’, ‘jacobi’, ‘rescaled ilu’, ‘rescaled jacobi’, or False (default: ‘ilu’)</p></li>
+<li><p><strong>preconditioner</strong> (<em>str</em><em>, </em><em>optional</em>) – Preconditioning method for iterative solver: ‘ilu’, ‘jacobi’, ‘rescaled ilu’, ‘rescaled jacobi’, or ‘none’ (default: ‘ilu’)</p></li>
 <li><p><strong>implicit_viscosity</strong> (<em>bool</em><em>, </em><em>optional</em>) – Treat viscosity implicitly, experimental (default: False)</p></li>
 <li><p><strong>**kwargs</strong> – Arguments passed to <code class="docutils literal notranslate"><span class="pre">fluids._GenericFluid</span></code> (debug, name)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Variables<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>E0</strong> (<em>astropy.units.Quantity</em><em> [</em><em>erg/cm^3</em><em>]</em>) – Reference radiation energy density</p></li>
+<li><p><strong>Qirr</strong> (<em>astropy.units.Quantity</em><em> [</em><em>erg/</em><em>(</em><em>s cm^3</em><em>)</em><em>]</em>) – Irradiation heating term</p></li>
+<li><p><strong>Qvisc</strong> (<em>astropy.units.Quantity</em><em> [</em><em>erg/</em><em>(</em><em>s cm^3</em><em>)</em><em>]</em>) – Viscous heating term</p></li>
+<li><p><strong>irradiation</strong> (<em>bool</em>) – Any fluid has irradiation enabled</p></li>
+<li><p><strong>viscosity</strong> (<em>bool</em>) – Any fluid has viscosity enabled</p></li>
+<li><p><strong>M</strong> (<em>ndarray</em>) – Radiation matrix (7 diagonals for 3D)</p></li>
+<li><p><strong>B</strong> (<em>astropy.units.Quantity</em><em> [</em><em>erg/cm^3</em><em>]</em>) – Right-hand side vector</p></li>
+<li><p><strong>solve_x3</strong> (<em>solve_x1</em><em>, </em><em>solve_x2</em><em>,</em>) – Whether to solve in each direction</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.E0">
-<span class="sig-name descname"><span class="pre">E0</span></span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.E0" title="Permalink to this definition"></a></dt>
-<dd><p>Reference radiation energy density</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity [erg/cm^3]</p>
-</dd>
-</dl>
-</dd></dl>
+<span class="sig-name descname"><span class="pre">E0</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;Quantity</span> <span class="pre">7.56573325e-11</span> <span class="pre">erg</span> <span class="pre">/</span> <span class="pre">cm3&gt;</span></em><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.E0" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.Mat">
+<span class="sig-name descname"><span class="pre">Mat</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.Mat" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.Qirr">
-<span class="sig-name descname"><span class="pre">Qirr</span></span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.Qirr" title="Permalink to this definition"></a></dt>
-<dd><p>Irradiation heating term</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity [erg/(s cm^3)]</p>
-</dd>
-</dl>
-</dd></dl>
+<span class="sig-name descname"><span class="pre">Qirr</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.Qirr" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.Qvisc">
-<span class="sig-name descname"><span class="pre">Qvisc</span></span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.Qvisc" title="Permalink to this definition"></a></dt>
-<dd><p>Viscous heating term</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity [erg/(s cm^3)]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.irradiation">
-<span class="sig-name descname"><span class="pre">irradiation</span></span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.irradiation" title="Permalink to this definition"></a></dt>
-<dd><p>Any fluid has irradiation enabled</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.viscosity">
-<span class="sig-name descname"><span class="pre">viscosity</span></span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.viscosity" title="Permalink to this definition"></a></dt>
-<dd><p>Any fluid has viscosity enabled</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.M">
-<span class="sig-name descname"><span class="pre">M</span></span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.M" title="Permalink to this definition"></a></dt>
-<dd><p>Radiation matrix (7 diagonals for 3D)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>ndarray</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.B">
-<span class="sig-name descname"><span class="pre">B</span></span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.B" title="Permalink to this definition"></a></dt>
-<dd><p>Right-hand side vector</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity [erg/cm^3]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">solve_x1,</span> <span class="pre">solve_x2,</span> <span class="pre">solve_x3</span></span></dt>
-<dd><p>Whether to solve in each direction</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="id0">
-<span class="sig-name descname"><span class="pre">E0</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;Quantity</span> <span class="pre">7.56573325e-11</span> <span class="pre">erg</span> <span class="pre">/</span> <span class="pre">cm3&gt;</span></em><a class="headerlink" href="#id0" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="id1">
-<span class="sig-name descname"><span class="pre">Qirr</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#id1" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="id2">
-<span class="sig-name descname"><span class="pre">Qvisc</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#id2" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Qvisc</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.Qvisc" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.advance">
-<span class="sig-name descname"><span class="pre">advance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dt=&lt;Quantity</span> <span class="pre">1.</span> <span class="pre">yr&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uf=0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.advance" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">advance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dt=&lt;Quantity</span> <span class="pre">1.</span> <span class="pre">yr&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uf=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recompute_preconditioner=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**ilu_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.advance" title="Permalink to this definition"></a></dt>
 <dd><p>Advance radiation-hydrodynamics by one timestep.</p>
 <p>Complete time stepping procedure: update opacities and effective fractions
 for all fluids, compute source terms (irradiation, viscous heating),
@@ -314,10 +244,21 @@ This is the main function to call in time-stepping loops.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>dt</strong> (<em>astropy.units.Quantity</em><em> [</em><em>s</em><em>]</em><em>, </em><em>optional</em>) – Timestep size (default: 1 yr)</p></li>
 <li><p><strong>uf</strong> (<em>float</em><em> [</em><em>0-1</em><em>]</em><em>, </em><em>optional</em>) – Under-relaxation factor for temperature update (default: 0)</p></li>
+<li><p><strong>recompute_preconditioner</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to recompute preconditioner before solving (default: True)
+It might be worth setting this to False if the system
+doesn’t change much between steps to save time, especially when
+using ILU as it can be expensive to compute. If False, the previous
+preconditioner is reused when available, and a new one is computed
+otherwise (e.g., on the first call or after changing <code class="docutils literal notranslate"><span class="pre">preconditioner</span></code>).</p></li>
+<li><p><strong>ilu_kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Additional keyword arguments to pass to spilu for ILU preconditioning (default: {})
+Options include ‘drop_tol’ for controlling fill-in and ‘fill_factor’ for maximum nonzeros.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>ValueError</strong> – If any fluid is not initialized</p>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If any fluid is not initialized</p></li>
+<li><p><strong>RuntimeError</strong> – If the linear solver fails; tmp and Er are then left unchanged</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -377,16 +318,16 @@ Ray tracing accounts for cumulative optical depth from inner boundary.</p>
 <span class="sig-name descname"><span class="pre">compute_Qvisc</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.compute_Qvisc" title="Permalink to this definition"></a></dt>
 <dd><p>Compute viscous heating source term.</p>
 <p>Integrates viscous dissipation across all fluids with viscosity enabled:
-Q_visc = (9/4) alpha sqrt(gamma)^2 P Omega_K. Only works in spherical geometry.</p>
-<section id="id3">
-<h3>Updates<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h3>
+Q_visc = (9/4) alpha sqrt(gamma) P Omega_K. Works in cylindrical/spherical geometry.</p>
+<section id="id1">
+<h3>Updates<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h3>
 <dl class="simple">
 <dt>Qvisc<span class="classifier">astropy.units.Quantity [erg/(s cm^3)]</span></dt><dd><p>Total viscous heating rate</p>
 </dd>
 </dl>
 <dl class="field-list simple">
 <dt class="field-odd">raises NotImplementedError<span class="colon">:</span></dt>
-<dd class="field-odd"><p>If grid geometry is not spherical</p>
+<dd class="field-odd"><p>If grid geometry is not spherical or cylindrical</p>
 </dd>
 <dt class="field-even">raises ValueError<span class="colon">:</span></dt>
 <dd class="field-even"><p>If star object is not available</p>
@@ -417,12 +358,15 @@ thetamax, phimin, phimax.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>bound</strong> (<em>array-like</em><em>, </em><em>length 2*dims</em>) – Boundary types: FIXEDVALUE, PERIODIC, REFLECTIVE, UNDEFINED</p></li>
+<li><p><strong>bound</strong> (<em>array-like</em><em>, </em><em>length 2*dims</em>) – Boundary types: FIXEDVALUE or REFLECTIVE. Every boundary must be
+declared, including directions with a single cell (REFLECTIVE is
+the natural choice there).</p></li>
 <li><p><strong>val</strong> (<em>array-like</em><em>, </em><em>length 2*dims</em>) – Boundary values for FIXEDVALUE boundaries [erg/cm^3] or Quantity</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>ValueError</strong> – If arrays have wrong length or contain unrecognized types</p>
+<dd class="field-even"><p><strong>ValueError</strong> – If arrays have wrong length, contain unrecognized types, or
+    leave any boundary UNDEFINED</p>
 </dd>
 </dl>
 </dd></dl>
@@ -437,8 +381,8 @@ equilibrium profiles and updates pressure/energy fields.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>rhogas</strong> (<em>astropy.units.Quantity</em><em> [</em><em>g/cm^3</em><em>]</em><em>, </em><em>optional</em>) – Gas density field for dust settling. If None, computed from Gas fluids
-(default: None)</p></li>
+<li><p><strong>rhogas</strong> (<em>astropy.units.Quantity</em><em> [</em><em>g/cm^3</em><em>]</em><em>, </em><em>optional</em>) – Gas density field for dust settling. If None, computed from the Gas
+fluids after they have been put in equilibrium (default: None)</p></li>
 <li><p><strong>uf</strong> (<em>float</em><em> [</em><em>0-1</em><em>]</em><em>, </em><em>optional</em>) – Under-relaxation factor for convergence (default: 0, full update)</p></li>
 </ul>
 </dd>
@@ -450,6 +394,11 @@ equilibrium profiles and updates pressure/energy fields.</p>
 <span class="sig-name descname"><span class="pre">enforce_matrix_boundaries</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.enforce_matrix_boundaries" title="Permalink to this definition"></a></dt>
 <dd><p>Apply boundary conditions to FLD matrix and RHS vector.</p>
 </dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.eng">
+<span class="sig-name descname"><span class="pre">eng</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.eng" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.get_flux_limiter">
@@ -474,8 +423,8 @@ density as function of radius and azimuth. Works only in spherical geometry.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="id4">
-<span class="sig-name descname"><span class="pre">irradiation</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#id4" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.irradiation">
+<span class="sig-name descname"><span class="pre">irradiation</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.irradiation" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -492,12 +441,35 @@ have resolution &gt; 1 (for diffusion terms). Matrix has 7 diagonals for
 3D (center + 6 off-diagonals).</p>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.prs">
+<span class="sig-name descname"><span class="pre">prs</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.prs" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.refresh_fluids">
 <span class="sig-name descname"><span class="pre">refresh_fluids</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.refresh_fluids" title="Permalink to this definition"></a></dt>
-<dd><p>Call refresh() on all fluids to update opacities and effective fractions.
-Useful to call before visualizing or dumping snapshots.</p>
+<dd><p>Call refresh() on all fluids, then update the totals.</p>
+<p>Recomputes effective fractions, rho_eff, opacities, pressure/energy, and
+optical depths at the current temperature. Called at the start of
+advance(); also useful before visualizing or dumping snapshots.</p>
 </dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.refresh_from_fluids">
+<span class="sig-name descname"><span class="pre">refresh_from_fluids</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.refresh_from_fluids" title="Permalink to this definition"></a></dt>
+<dd><p>Recompute the total density, pressure, and internal energy from the fluids.</p>
+<p>Sums the stored rho_eff, prs, and eng of all fluids, so each fluid
+contributes with its own eps, mu, and gamma. All fluids share the same
+temperature. Called by setup(), refresh_fluids(), update_fluids(),
+enforce_hydrostatic_equilibrium(), and _rebuild_after_read().
+Does not refresh the fluids themselves; see refresh_fluids() for that.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.rho">
+<span class="sig-name descname"><span class="pre">rho</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.rho" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.setup">
@@ -513,16 +485,15 @@ prepares for FLD solving. Shared temperature and grid from fluids[0].</p>
 <span class="sig-name descname"><span class="pre">update_fluids</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.update_fluids" title="Permalink to this definition"></a></dt>
 <dd><p>Synchronize all fluids with updated temperature and radiation energy.</p>
 <p>Copies temperature and radiation energy from RadiativeEnvironment to
-each fluid and recomputes pressure and internal energy.</p>
+each fluid and recomputes pressure and internal energy. Fractions,
+rho_eff, and opacities are not recomputed here; that happens at the
+start of the next advance() (or via refresh_fluids()).</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.update_pressure_energy">
 <span class="sig-name descname"><span class="pre">update_pressure_energy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.update_pressure_energy" title="Permalink to this definition"></a></dt>
-<dd><p>Update pressure and internal energy from density and temperature.</p>
-<p>Computes pressure using ideal gas law and internal energy density
-using adiabatic relations. Total density already includes effective
-fractions (eps) from all fluids.</p>
+<dd><p>Overrides the fluid version, which does not apply here; equivalent to refresh_from_fluids().</p>
 </dd></dl>
 
 <dl class="py method">
@@ -542,16 +513,17 @@ implicit viscosity. Applies temperature floor at 3 K to prevent crashes.</p>
 <li><p><strong>-------</strong> – </p></li>
 <li><p><strong>tmp</strong> (<em>astropy.units.Quantity</em><em> [</em><em>K</em><em>]</em>) – Updated temperature field (with under-relaxation)</p></li>
 <li><p><strong>Er</strong> (<em>astropy.units.Quantity</em><em> [</em><em>erg/cm^3</em><em>]</em>) – Updated radiation energy density</p></li>
-<li><p><strong>prs</strong> (<em>astropy.units.Quantity</em>) – Updated pressure and internal energy from new temperature</p></li>
-<li><p><strong>eng</strong> (<em>astropy.units.Quantity</em>) – Updated pressure and internal energy from new temperature</p></li>
+<li><p><strong>update_fluids</strong><strong>(</strong><strong>)</strong> (<em>prs and eng are updated afterwards in</em>) – </p></li>
+<li><p><strong>the</strong> (<em>once</em>) – </p></li>
+<li><p><strong>temperature.</strong> (<em>fluids have received the new</em>) – </p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="id5">
-<span class="sig-name descname"><span class="pre">viscosity</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#id5" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.viscosity">
+<span class="sig-name descname"><span class="pre">viscosity</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.viscosity" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -614,50 +586,32 @@ the Stokes number and dust-to-gas coupling.</p>
 <dt>grain_size<span class="classifier">float [cm] or astropy.units.Quantity, optional</span></dt><dd><p>Grain size assuming monodisperse distribution (default: 1 μm)</p>
 </dd>
 </dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.fluids.Dust.grain_rho">
-<span class="sig-name descname"><span class="pre">grain_rho</span></span><a class="headerlink" href="#pyFLD.fluids.Dust.grain_rho" title="Permalink to this definition"></a></dt>
-<dd><p>Material density of dust grains</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity [g/cm^3]</p>
+<dt class="field-odd">ivar grain_rho<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Material density of dust grains</p>
+</dd>
+<dt class="field-even">vartype grain_rho<span class="colon">:</span></dt>
+<dd class="field-even"><p>astropy.units.Quantity [g/cm^3]</p>
+</dd>
+<dt class="field-odd">ivar grain_size<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Grain size</p>
+</dd>
+<dt class="field-even">vartype grain_size<span class="colon">:</span></dt>
+<dd class="field-even"><p>astropy.units.Quantity [cm]</p>
+</dd>
+<dt class="field-odd">ivar isDust<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Identifier flag (True for Dust)</p>
+</dd>
+<dt class="field-even">vartype isDust<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+<dt class="field-odd">ivar isGas<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Identifier flag (False for Dust)</p>
+</dd>
+<dt class="field-even">vartype isGas<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.fluids.Dust.grain_size">
-<span class="sig-name descname"><span class="pre">grain_size</span></span><a class="headerlink" href="#pyFLD.fluids.Dust.grain_size" title="Permalink to this definition"></a></dt>
-<dd><p>Grain size</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity [cm]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.fluids.Dust.isDust">
-<span class="sig-name descname"><span class="pre">isDust</span></span><a class="headerlink" href="#pyFLD.fluids.Dust.isDust" title="Permalink to this definition"></a></dt>
-<dd><p>Identifier flag (True for Dust)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.fluids.Dust.isGas">
-<span class="sig-name descname"><span class="pre">isGas</span></span><a class="headerlink" href="#pyFLD.fluids.Dust.isGas" title="Permalink to this definition"></a></dt>
-<dd><p>Identifier flag (False for Dust)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pyFLD.fluids.Dust.compute_hydrostatic_equilibrium">
 <span class="sig-name descname"><span class="pre">compute_hydrostatic_equilibrium</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rhogas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.fluids.Dust.compute_hydrostatic_equilibrium" title="Permalink to this definition"></a></dt>
@@ -699,28 +653,14 @@ Must have same shape as grid (including ghost cells). (required)</p></li>
 <p>Gas fluid for protoplanetary disk simulations.</p>
 <p>Extends <cite>_RadiativeFluid</cite> with gas-specific methods. Implements gas hydrostatic
 equilibrium with vertical structure determined by pressure support and gravity.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.fluids.Gas.isGas">
-<span class="sig-name descname"><span class="pre">isGas</span></span><a class="headerlink" href="#pyFLD.fluids.Gas.isGas" title="Permalink to this definition"></a></dt>
-<dd><p>Identifier flag (True for Gas)</p>
 <dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bool</p>
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>isGas</strong> (<em>bool</em>) – Identifier flag (True for Gas)</p></li>
+<li><p><strong>isDust</strong> (<em>bool</em>) – Identifier flag (False for Gas)</p></li>
+</ul>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.fluids.Gas.isDust">
-<span class="sig-name descname"><span class="pre">isDust</span></span><a class="headerlink" href="#pyFLD.fluids.Gas.isDust" title="Permalink to this definition"></a></dt>
-<dd><p>Identifier flag (False for Gas)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pyFLD.fluids.Gas.compute_hydrostatic_equilibrium">
 <span class="sig-name descname"><span class="pre">compute_hydrostatic_equilibrium</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rhogas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.fluids.Gas.compute_hydrostatic_equilibrium" title="Permalink to this definition"></a></dt>
@@ -734,7 +674,7 @@ density from increasing toward poles (prevents material flowing upward).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>rhogas</strong> (<em>array-like</em><em> [</em><em>g/cm^3</em><em>] or </em><em>astropy.units.Quantity</em><em>, </em><em>optional</em>) – Not used for gas fluids. Included for API compatibility.
+<li><p><strong>rhogas</strong> (<em>array-like</em><em> [</em><em>g/cm^3</em><em>] or </em><em>astropy.units.Quantity</em><em>, </em><em>optional</em>) – Not used for gas fluids. Included for compatibility.
 (default: None)</p></li>
 <li><p><strong>uf</strong> (<em>float</em><em> [</em><em>0-1</em><em>]</em><em>, </em><em>optional</em>) – Under-relaxation factor for convergence. (default: 0)</p></li>
 </ul>
@@ -796,139 +736,23 @@ For spherical: azimuthal angle (radians).</p></li>
 <li><p><strong>geometry</strong> (<em>str</em><em>, </em><em>optional</em>) – Grid geometry type: ‘cartesian’, ‘cylindrical’, or ‘spherical’ (default: ‘cartesian’)</p></li>
 </ul>
 </dd>
-</dl>
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">x1,</span> <span class="pre">x2,</span> <span class="pre">x3</span></span></dt>
-<dd><p>Cell center coordinates in each direction</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity (ndarray)</p>
+<dt class="field-even">Variables<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>x3</strong> (<em>x1</em><em>, </em><em>x2</em><em>,</em>) – Cell center coordinates in each direction</p></li>
+<li><p><strong>dx3</strong> (<em>dx1</em><em>, </em><em>dx2</em><em>,</em>) – Cell widths in each direction</p></li>
+<li><p><strong>A3</strong> (<em>A1</em><em>, </em><em>A2</em><em>,</em>) – 3D arrays of cell face areas in each direction</p></li>
+<li><p><strong>dV</strong> (<em>astropy.units.Quantity</em><em> (</em><em>ndarray</em><em>)</em>) – 3D array of cell volumes</p></li>
+<li><p><strong>h3</strong> (<em>h1</em><em>, </em><em>h2</em><em>,</em>) – Metric scale factors in each direction (equal to 1 for Cartesian)</p></li>
+<li><p><strong>z</strong> (<em>R</em><em>,</em>) – 2D arrays of cylindrical coordinates (spherical geometry only)</p></li>
+<li><p><strong>NX3</strong> (<em>NX1</em><em>, </em><em>NX2</em><em>,</em>) – Number of active cells in each direction</p></li>
+<li><p><strong>NX3_TOT</strong> (<em>NX1_TOT</em><em>, </em><em>NX2_TOT</em><em>,</em>) – Total number of cells (including ghost cells) in each direction</p></li>
+<li><p><strong>kbeg</strong> (<em>ibeg</em><em>, </em><em>jbeg</em><em>,</em>) – Starting indices of active cells in each direction</p></li>
+<li><p><strong>kend</strong> (<em>iend</em><em>, </em><em>jend</em><em>,</em>) – Ending indices of active cells in each direction</p></li>
+<li><p><strong>act3</strong> (<em>act1</em><em>, </em><em>act2</em><em>,</em>) – Slice objects for active cells in each direction</p></li>
+<li><p><strong>active</strong> (<em>slice</em>) – Slice object for all active cells in 3D</p></li>
+</ul>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">dx1,</span> <span class="pre">dx2,</span> <span class="pre">dx3</span></span></dt>
-<dd><p>Cell widths in each direction</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity (ndarray)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">A1,</span> <span class="pre">A2,</span> <span class="pre">A3</span></span></dt>
-<dd><p>3D arrays of cell face areas in each direction</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity (ndarray)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.grid.Grid.dV">
-<span class="sig-name descname"><span class="pre">dV</span></span><a class="headerlink" href="#pyFLD.grid.Grid.dV" title="Permalink to this definition"></a></dt>
-<dd><p>3D array of cell volumes</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity (ndarray)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">h1,</span> <span class="pre">h2,</span> <span class="pre">h3</span></span></dt>
-<dd><p>Metric scale factors in each direction (equal to 1 for Cartesian)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity (ndarray) or float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">R,</span> <span class="pre">z</span></span></dt>
-<dd><p>2D arrays of cylindrical coordinates (spherical geometry only)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity (ndarray)</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">NX1,</span> <span class="pre">NX2,</span> <span class="pre">NX3</span></span></dt>
-<dd><p>Number of active cells in each direction</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">NX1_TOT,</span> <span class="pre">NX2_TOT,</span> <span class="pre">NX3_TOT</span></span></dt>
-<dd><p>Total number of cells (including ghost cells) in each direction</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">ibeg,</span> <span class="pre">jbeg,</span> <span class="pre">kbeg</span></span></dt>
-<dd><p>Starting indices of active cells in each direction</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">iend,</span> <span class="pre">jend,</span> <span class="pre">kend</span></span></dt>
-<dd><p>Ending indices of active cells in each direction</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">act1,</span> <span class="pre">act2,</span> <span class="pre">act3</span></span></dt>
-<dd><p>Slice objects for active cells in each direction</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>slice</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.grid.Grid.active">
-<span class="sig-name descname"><span class="pre">active</span></span><a class="headerlink" href="#pyFLD.grid.Grid.active" title="Permalink to this definition"></a></dt>
-<dd><p>Slice object for all active cells in 3D</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>slice</p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pyFLD.grid.Grid.write_snapshot">
 <span class="sig-name descname"><span class="pre">write_snapshot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dirc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'./'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'grid'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.grid.Grid.write_snapshot" title="Permalink to this definition"></a></dt>
@@ -1045,29 +869,13 @@ Default is <code class="docutils literal notranslate"><span class="pre">'amr_gri
 class (e.g., x1i, x2i, x3i, geometry).</p></li>
 </ul>
 </dd>
-</dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.radmc_helper.Grid.dirc">
-<span class="sig-name descname"><span class="pre">dirc</span></span><a class="headerlink" href="#pyFLD.radmc_helper.Grid.dirc" title="Permalink to this definition"></a></dt>
-<dd><p>Output directory for RADMC3D files.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>str</p>
+<dt class="field-even">Variables<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>dirc</strong> (<em>str</em>) – Output directory for RADMC3D files.</p></li>
+<li><p><strong>flnm</strong> (<em>str</em>) – Full path to the grid file.</p></li>
+</ul>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.radmc_helper.Grid.flnm">
-<span class="sig-name descname"><span class="pre">flnm</span></span><a class="headerlink" href="#pyFLD.radmc_helper.Grid.flnm" title="Permalink to this definition"></a></dt>
-<dd><p>Full path to the grid file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>str</p>
-</dd>
-</dl>
-</dd></dl>
-
 <p class="rubric">Examples</p>
 <p>Create a spherical grid and export to RADMC3D:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ri</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">au</span>   <span class="c1"># 100 radial cells</span>
@@ -1218,40 +1026,14 @@ Default is <code class="docutils literal notranslate"><span class="pre">'stars.i
 class (e.g., M, L, T, wl).</p></li>
 </ul>
 </dd>
-</dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.radmc_helper.Star.dirc">
-<span class="sig-name descname"><span class="pre">dirc</span></span><a class="headerlink" href="#pyFLD.radmc_helper.Star.dirc" title="Permalink to this definition"></a></dt>
-<dd><p>Output directory for RADMC3D files.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>str</p>
+<dt class="field-even">Variables<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>dirc</strong> (<em>str</em>) – Output directory for RADMC3D files.</p></li>
+<li><p><strong>flnm</strong> (<em>str</em>) – Full path to the star file.</p></li>
+<li><p><strong>p</strong> (<em>list</em><em> of </em><em>3 floats</em>) – Star position [cm] (x, y, z coordinates).</p></li>
+</ul>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.radmc_helper.Star.flnm">
-<span class="sig-name descname"><span class="pre">flnm</span></span><a class="headerlink" href="#pyFLD.radmc_helper.Star.flnm" title="Permalink to this definition"></a></dt>
-<dd><p>Full path to the star file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>str</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.radmc_helper.Star.p">
-<span class="sig-name descname"><span class="pre">p</span></span><a class="headerlink" href="#pyFLD.radmc_helper.Star.p" title="Permalink to this definition"></a></dt>
-<dd><p>Star position [cm] (x, y, z coordinates).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>list of 3 floats</p>
-</dd>
-</dl>
-</dd></dl>
-
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">rmc_star</span> <span class="o">=</span> <span class="n">radmc_helper</span><span class="o">.</span><span class="n">Star</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">rmc_star</span><span class="o">.</span><span class="n">read_from_file</span><span class="p">(</span><span class="s1">&#39;stars.inp&#39;</span><span class="p">)</span>
@@ -1847,98 +1629,22 @@ Stefan-Boltzmann law.</p>
 <li><p><strong>wl</strong> (<em>array-like</em><em> [</em><em>cm</em><em>] or </em><em>astropy.units.Quantity</em><em>, </em><em>optional</em>) – Wavelengths for spectrum sampling in cm (default: None, no spectrum)</p></li>
 </ul>
 </dd>
-</dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.star.Star.M">
-<span class="sig-name descname"><span class="pre">M</span></span><a class="headerlink" href="#pyFLD.star.Star.M" title="Permalink to this definition"></a></dt>
-<dd><p>Stellar mass in solar masses</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity</p>
+<dt class="field-even">Variables<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>M</strong> (<em>astropy.units.Quantity</em>) – Stellar mass in solar masses</p></li>
+<li><p><strong>L</strong> (<em>astropy.units.Quantity</em>) – Stellar luminosity in solar luminosities</p></li>
+<li><p><strong>T</strong> (<em>astropy.units.Quantity</em>) – Stellar effective temperature in Kelvin</p></li>
+<li><p><strong>R</strong> (<em>astropy.units.Quantity</em>) – Stellar radius in solar radii (computed from L and T)</p></li>
+<li><p><strong>GM</strong> (<em>astropy.units.Quantity</em>) – Gravitational parameter G * M</p></li>
+<li><p><strong>wl</strong> (<em>astropy.units.Quantity</em><em>, </em><em>optional</em>) – Wavelengths for spectrum sampling in cm (set if provided at initialization)</p></li>
+<li><p><strong>nbins</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of wavelength bins (set if wl is provided)</p></li>
+<li><p><strong>L_wl</strong> (<em>astropy.units.Quantity</em><em>, </em><em>optional</em>) – Stellar luminosity at each wavelength such that sum(L_wl) = L (set if wl is provided)</p></li>
+</ul>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.star.Star.L">
-<span class="sig-name descname"><span class="pre">L</span></span><a class="headerlink" href="#pyFLD.star.Star.L" title="Permalink to this definition"></a></dt>
-<dd><p>Stellar luminosity in solar luminosities</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.star.Star.T">
-<span class="sig-name descname"><span class="pre">T</span></span><a class="headerlink" href="#pyFLD.star.Star.T" title="Permalink to this definition"></a></dt>
-<dd><p>Stellar effective temperature in Kelvin</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.star.Star.R">
-<span class="sig-name descname"><span class="pre">R</span></span><a class="headerlink" href="#pyFLD.star.Star.R" title="Permalink to this definition"></a></dt>
-<dd><p>Stellar radius in solar radii (computed from L and T)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.star.Star.GM">
-<span class="sig-name descname"><span class="pre">GM</span></span><a class="headerlink" href="#pyFLD.star.Star.GM" title="Permalink to this definition"></a></dt>
-<dd><p>Gravitational parameter G * M</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.star.Star.wl">
-<span class="sig-name descname"><span class="pre">wl</span></span><a class="headerlink" href="#pyFLD.star.Star.wl" title="Permalink to this definition"></a></dt>
-<dd><p>Wavelengths for spectrum sampling in cm (set if provided at initialization)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity, optional</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.star.Star.nbins">
-<span class="sig-name descname"><span class="pre">nbins</span></span><a class="headerlink" href="#pyFLD.star.Star.nbins" title="Permalink to this definition"></a></dt>
-<dd><p>Number of wavelength bins (set if wl is provided)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int, optional</p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="py attribute">
 <dt class="sig sig-object py" id="pyFLD.star.Star.L_wl">
-<span class="sig-name descname"><span class="pre">L_wl</span></span><a class="headerlink" href="#pyFLD.star.Star.L_wl" title="Permalink to this definition"></a></dt>
-<dd><p>Stellar luminosity at each wavelength such that sum(L_wl) = L (set if wl is provided)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>astropy.units.Quantity, optional</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="id6">
-<span class="sig-name descname"><span class="pre">L_wl</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#id6" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">L_wl</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pyFLD.star.Star.L_wl" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -1986,13 +1692,13 @@ in logarithmic space. Works with any spacing pattern.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="id7">
-<span class="sig-name descname"><span class="pre">nbins</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#id7" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyFLD.star.Star.nbins">
+<span class="sig-name descname"><span class="pre">nbins</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pyFLD.star.Star.nbins" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="id8">
-<span class="sig-name descname"><span class="pre">wl</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#id8" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyFLD.star.Star.wl">
+<span class="sig-name descname"><span class="pre">wl</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pyFLD.star.Star.wl" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -2579,6 +2285,9 @@ If input is not a Quantity, multiplies by the specified unit.</p>
 <span class="sig-prename descclassname"><span class="pre">pyFLD.tools.</span></span><span class="sig-name descname"><span class="pre">write_dictionary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'./'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.tools.write_dictionary" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
+</section>
+<section id="module-pyFLD">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pyFLD" title="Permalink to this heading"></a></h2>
 </section>
 </section>
 

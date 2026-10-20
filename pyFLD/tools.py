@@ -617,7 +617,8 @@ def have_same_class_contents(cls1, cls2):
     if keys1 != keys2:
         return False
     for k in keys1:
-        if np.any(cls1.__dict__[k] != cls2.__dict__[k]):
+        # array_equal returns False for different shapes, instead of raising
+        if not np.array_equal(cls1.__dict__[k], cls2.__dict__[k]):
             return False
     return True
 

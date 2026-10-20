@@ -152,12 +152,13 @@
 <span class="n">Disk</span><span class="o">.</span><span class="n">configure_solver</span><span class="p">(</span><span class="n">rtol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><strong>To speed up multiple ``advance()`` calls</strong> (e.g., time evolution):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span><span class="o">.</span><span class="n">configure_solver</span><span class="p">(</span><span class="n">guess</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># Use previous solution as initial guess</span>
+<p><strong>To speed up multiple</strong> <code class="docutils literal notranslate"><span class="pre">advance()</span></code> <strong>calls</strong> (e.g., time evolution):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># the previous solution is used as initial guess by default (guess=True)</span>
 <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>
-    <span class="n">Disk</span><span class="o">.</span><span class="n">advance</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mf">1e5</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">yr</span><span class="p">)</span>
+    <span class="n">Disk</span><span class="o">.</span><span class="n">advance</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mf">1e5</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">yr</span><span class="p">,</span> <span class="n">recompute_preconditioner</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="c1"># reuse the preconditioner</span>
 </pre></div>
 </div>
+<p>Note that each call to <code class="docutils literal notranslate"><span class="pre">configure_solver</span></code> resets all arguments that are not passed to their defaults, so pass all settings in a single call.</p>
 </section>
 <section id="boundary-conditions">
 <h2>Boundary conditions<a class="headerlink" href="#boundary-conditions" title="Permalink to this heading"></a></h2>
@@ -197,7 +198,7 @@
 </pre></div>
 </div>
 <p><strong>Temperature-dependent opacity</strong> (more realistic):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">opacity_P</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">opacity_P</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
     <span class="n">T</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">tmp</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s1">&#39;K&#39;</span><span class="p">)</span>
     <span class="c1"># Simplified power law: kappa propto T^2 (example)</span>
     <span class="k">return</span> <span class="mf">1e-4</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">cm</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">u</span><span class="o">.</span><span class="n">g</span> <span class="o">*</span> <span class="p">(</span><span class="n">T</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
@@ -206,7 +207,7 @@
 </pre></div>
 </div>
 <p><strong>Automatic from frequency-dependent data</strong> (recommended):</p>
-<p>When using frequency-dependent opacities with <code class="docutils literal notranslate"><span class="pre">build_mean_opacities=True</span></code> (default), Rosseland and Planck means are computed automatically. No need to enroll them.</p>
+<p>When a fluid is given frequency-dependent opacities (<code class="docutils literal notranslate"><span class="pre">kabs_wl</span></code>, <code class="docutils literal notranslate"><span class="pre">ksca_wl</span></code>, <code class="docutils literal notranslate"><span class="pre">g_wl</span></code>), Rosseland and Planck means are computed automatically during <code class="docutils literal notranslate"><span class="pre">setup()</span></code>. No need to enroll them; any mean opacity you do enroll takes precedence.</p>
 </section>
 <section id="viscosity">
 <h2>Viscosity<a class="headerlink" href="#viscosity" title="Permalink to this heading"></a></h2>
@@ -254,7 +255,7 @@
 <section id="hydrostatic-equilibrium">
 <h2>Hydrostatic equilibrium<a class="headerlink" href="#hydrostatic-equilibrium" title="Permalink to this heading"></a></h2>
 <p><strong>When to use:</strong></p>
-<p>For self-consistent disk structure (gas pressure support, dust settling), especially with multiple species.</p>
+<p>For self-consistent disk structure (gas pressure support, dust settling), especially with multiple species. The polar grid must have a cell interface at <span class="math notranslate nohighlight">\(\pi/2\)</span> (the midplane), and can cover the top half, the bottom half, or both halves of the disk. Gas fluids are put in equilibrium first, and dust then settles with respect to the updated gas. The raw surface density of each fluid is conserved, also when an effective fraction (e.g. dust sublimation) is enrolled.</p>
 <p><strong>Best practice workflow:</strong></p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Initial setup</span>
 <span class="n">Disk</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">FLD</span><span class="o">.</span><span class="n">RadiativeEnvironment</span><span class="p">([</span><span class="n">Gas</span><span class="p">,</span> <span class="n">Dust</span><span class="p">])</span>
@@ -283,7 +284,7 @@
 <h2>Validation &amp; testing<a class="headerlink" href="#validation-testing" title="Permalink to this heading"></a></h2>
 <p><strong>Analytic benchmarks:</strong></p>
 <p>Test against known solutions before tackling complex models:</p>
-<p>Example: <strong>1D diffusion</strong> — Linear temperature profile (see <cite>example-basic</cite>)</p>
+<p>Example: <strong>1D diffusion</strong> — Linear temperature profile (see <a class="reference internal" href="example-basic.html"><span class="doc">Basic example: 1D diffusion equation</span></a>)</p>
 <p><strong>Convergence studies:</strong></p>
 <p>Run with different resolutions and check results converge:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">Nx</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">256</span><span class="p">]:</span>
@@ -301,7 +302,7 @@
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># Print solver iterations</span>
 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
     <span class="n">Disk</span><span class="o">.</span><span class="n">advance</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mf">1e6</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">yr</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: iters=</span><span class="si">{</span><span class="n">Disk</span><span class="o">.</span><span class="n">iters</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: iters=</span><span class="si">{</span><span class="n">Disk</span><span class="o">.</span><span class="n">iters</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="c1"># -1 for the direct solver (preconditioner=&#39;none&#39;)</span>
 </pre></div>
 </div>
 <p><strong>Profile the code</strong> using the <code class="docutils literal notranslate"><span class="pre">debug</span></code> flag to identify bottlenecks:</p>

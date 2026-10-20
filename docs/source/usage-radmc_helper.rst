@@ -43,7 +43,7 @@ Workflow
     rmc_star.write() # defaults to 'stars.inp'
     fld.radmc_helper.write_wavelength_array(star.wl) # 'wavelength_micron.inp'
     fld.radmc_helper.write_density_array([dust.rho[grid.active]]) # 'dust_density.binp'
-    fld.radmc_helper.write_temperature_array(dust.tmp[grid.active]) # 'dust_temperature.bdat' (optional)
+    fld.radmc_helper.write_temperature_array([dust.tmp[grid.active]]) # 'dust_temperature.bdat' (optional)
     fld.radmc_helper.write_opacity_handle(['mydust']) # 'dustopac.inp', expects 'dustkappa_mydust.inp' for opacities
     fld.radmc_helper.write_control_file() # 'radmc3d.inp'
 

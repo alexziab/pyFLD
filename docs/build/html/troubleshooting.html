@@ -17,6 +17,7 @@
         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -104,11 +105,19 @@
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">FLD</span><span class="o">.</span><span class="n">RadiativeEnvironment</span><span class="p">([</span><span class="n">gas</span><span class="p">],</span> <span class="n">preconditioner</span><span class="o">=</span><span class="s1">&#39;jacobi&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>You can also adjust solver tolerance and iteration limit:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span><span class="o">.</span><span class="n">configure_solver</span><span class="p">(</span><span class="n">rtol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="mi">20000</span><span class="p">)</span>
+<p>You can also adjust the solver tolerance and/or iteration limit:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span><span class="o">.</span><span class="n">configure_solver</span><span class="p">(</span><span class="n">rtol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="mi">20000</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Lower tolerance (stricter convergence) slows down the solver. Increase <code class="docutils literal notranslate"><span class="pre">maxiter</span></code> if needed.</p>
+<p><strong>Q: advance() raises “RuntimeError: … did not converge”</strong></p>
+<p>A: The linear solver did not reach the requested tolerance within <code class="docutils literal notranslate"><span class="pre">maxiter</span></code> iterations (or the direct solver returned non-finite values). In that case <code class="docutils literal notranslate"><span class="pre">advance()</span></code> leaves the temperature and radiation field unchanged, so you can catch the error and retry, e.g. with a smaller time step or a different preconditioner:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">Disk</span><span class="o">.</span><span class="n">advance</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="n">dt</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
+    <span class="n">Disk</span><span class="o">.</span><span class="n">advance</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="n">dt</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
 <p><strong>Q: Solution oscillates or is unphysical</strong></p>
 <p>A: Check your boundary conditions. The most common mistake is using the wrong boundary constant names. Use these:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">BOUNDARY_FIXEDVALUE</span>   <span class="c1"># fixed-value boundary</span>
@@ -116,6 +125,7 @@
 </pre></div>
 </div>
 <p>Also verify that your opacities are physically reasonable (not negative or extremely large).</p>
+<p>If, despite that, the solution still oscillates, try reducing the timestep (stable doesn’t mean accurate!) or using under-relaxation, where the new and old solutions are weighed together. Calling <code class="docutils literal notranslate"><span class="pre">advance(dt,</span> <span class="pre">uf=0.4)</span></code> gives a 40% weight to the old solution and 60% to the new one, which can help stabilize things.</p>
 <p><strong>Q: Solver runs but temperature doesn’t change</strong></p>
 <p>A: Likely causes:</p>
 <ol class="arabic simple">
@@ -126,19 +136,16 @@
 <section id="boundary-conditions">
 <h2>Boundary Conditions<a class="headerlink" href="#boundary-conditions" title="Permalink to this heading"></a></h2>
 <p><strong>Q: What are the six boundary indices?</strong></p>
-<p>A: The order is: <code class="docutils literal notranslate"><span class="pre">[inner_radial,</span> <span class="pre">outer_radial,</span> <span class="pre">inner_polar,</span> <span class="pre">outer_polar,</span> <span class="pre">inner_azimuthal,</span> <span class="pre">outer_azimuthal]</span></code></p>
+<p>A: The order is: <code class="docutils literal notranslate"><span class="pre">[lower_x1,</span> <span class="pre">upper_x1,</span> <span class="pre">lower_x2,</span> <span class="pre">upper_x2,</span> <span class="pre">lower_x3,</span> <span class="pre">upper_x3]</span></code>. In spherical coordinates, this corresponds to <code class="docutils literal notranslate"><span class="pre">[inner_radial,</span> <span class="pre">outer_radial,</span> <span class="pre">inner_polar,</span> <span class="pre">outer_polar,</span> <span class="pre">inner_azimuthal,</span> <span class="pre">outer_azimuthal]</span></code></p>
 <p>In code: <code class="docutils literal notranslate"><span class="pre">bounds</span> <span class="pre">=</span> <span class="pre">[bound_0,</span> <span class="pre">bound_1,</span> <span class="pre">bound_2,</span> <span class="pre">bound_3,</span> <span class="pre">bound_4,</span> <span class="pre">bound_5]</span></code></p>
-<p><strong>Q: Getting boundary error despite calling declare_boundaries()</strong></p>
-<p>A: Make sure you’re calling it <em>before</em> <code class="docutils literal notranslate"><span class="pre">setup()</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># WRONG</span>
-<span class="n">Disk</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>  <span class="c1"># This checks for boundaries</span>
+<p><strong>Q: Getting a boundary error when calling advance()</strong></p>
+<p>A: Boundaries must be declared before the first call to <code class="docutils literal notranslate"><span class="pre">advance()</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">FLD</span><span class="o">.</span><span class="n">RadiativeEnvironment</span><span class="p">([</span><span class="n">gas</span><span class="p">])</span>
 <span class="n">Disk</span><span class="o">.</span><span class="n">declare_boundaries</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span>
-
-<span class="c1"># CORRECT</span>
-<span class="n">Disk</span><span class="o">.</span><span class="n">declare_boundaries</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span>
-<span class="n">Disk</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
+<span class="n">Disk</span><span class="o">.</span><span class="n">advance</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="mi">1</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">yr</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>All 6 boundaries must be declared, as <code class="docutils literal notranslate"><span class="pre">BOUNDARY_FIXEDVALUE</span></code> or <code class="docutils literal notranslate"><span class="pre">BOUNDARY_REFLECTIVE</span></code>; <code class="docutils literal notranslate"><span class="pre">declare_boundaries</span></code> raises a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if any of them is <code class="docutils literal notranslate"><span class="pre">BOUNDARY_UNDEFINED</span></code>. For directions with a single cell, use <code class="docutils literal notranslate"><span class="pre">BOUNDARY_REFLECTIVE</span></code>.</p>
 </section>
 <section id="opacities-units">
 <h2>Opacities &amp; Units<a class="headerlink" href="#opacities-units" title="Permalink to this heading"></a></h2>
@@ -154,24 +161,29 @@
 </div>
 <p>If values are unexpectedly large or small, double-check the file is not corrupted or in a different format.</p>
 <p><strong>Q: Unit conversion errors when setting density/temperature</strong></p>
-<p>A: Always be explicit about units:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># WRONG – will fail</span>
+<p>A: Plain arrays are accepted and interpreted in cgs (g/cm^3 for density, K for temperature), but it is safer to be explicit about units, so that a value in the wrong unit raises an error instead of being silently misinterpreted:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># works, but assumes g/cm^3</span>
 <span class="n">gas</span><span class="o">.</span><span class="n">set_density</span><span class="p">(</span><span class="mf">1e-10</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">grid</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
 
-<span class="c1"># CORRECT</span>
-<span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
+<span class="c1"># explicit, and recommended</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">astropy</span><span class="w"> </span><span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
 <span class="n">gas</span><span class="o">.</span><span class="n">set_density</span><span class="p">(</span><span class="mf">1e-10</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">g</span><span class="o">/</span><span class="n">u</span><span class="o">.</span><span class="n">cm</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">grid</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
 </pre></div>
 </div>
+<p><strong>Q: “UnitTypeError” during advance() with irradiation</strong></p>
+<p>A: An enrolled opacity function likely returns a plain number instead of a quantity with units of cm^2/g, so the optical depth is not dimensionless. Make sure enrolled opacities carry units, e.g. <code class="docutils literal notranslate"><span class="pre">Gas.enroll_kappaPstar(lambda</span> <span class="pre">f:</span> <span class="pre">1e-10</span> <span class="pre">*</span> <span class="pre">u.cm**2/u.g)</span></code>.</p>
 <p><strong>Q: Grid coordinates don’t have the right units</strong></p>
-<p>A: Length coordinates (x1, x2, x3 in Cartesian; x1 in cylindrical/spherical) must have units. Angles must be dimensionless in radians:</p>
+<p>A: Length coordinates (x1, x2, x3 in Cartesian; x1 in cylindrical/spherical) are interpreted in au if given as plain arrays; passing them with explicit units is recommended. Angles must be dimensionless in radians:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># CORRECT spherical grid</span>
 <span class="n">ri</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_domain_with_ghosts</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">au</span>
-<span class="n">thi</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_domain_with_ghosts</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>  <span class="c1"># plain radians, no units!</span>
+<span class="n">thi</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_domain_with_ghosts</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>  <span class="c1"># plain radians, no units!</span>
 <span class="n">phii</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_domain_with_ghosts</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># plain radians</span>
 <span class="n">grid</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">Grid</span><span class="p">(</span><span class="n">ri</span><span class="p">,</span> <span class="n">thi</span><span class="p">,</span> <span class="n">phii</span><span class="p">,</span> <span class="n">geometry</span><span class="o">=</span><span class="s1">&#39;spherical&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>Keep the polar range (including ghost cells) within <span class="math notranslate nohighlight">\([0, \pi]\)</span>.</p>
+<p><strong>Q: Warning “no cell interface at pi/2” when creating a spherical grid</strong></p>
+<p>A: The midplane falls inside a cell, so vertical integrations (e.g. hydrostatic equilibrium) will not start exactly at the midplane. If the additional warning “no cell center at pi/2 either” appears, the midplane is not sampled by the grid at all, and quantities at <code class="docutils literal notranslate"><span class="pre">grid.mid</span></code> are offset from it. Choose the polar range and number of cells such that <span class="math notranslate nohighlight">\(\pi/2\)</span> is a cell interface, e.g. <code class="docutils literal notranslate"><span class="pre">get_domain_with_ghosts(np.pi/2-0.3,</span> <span class="pre">np.pi/2,</span> <span class="pre">Nx=32)</span></code> for the top half of a disk, or an even number of cells in a range symmetric around <span class="math notranslate nohighlight">\(\pi/2\)</span> for a full disk.</p>
 </section>
 <section id="memory-performance">
 <h2>Memory &amp; Performance<a class="headerlink" href="#memory-performance" title="Permalink to this heading"></a></h2>
@@ -194,9 +206,12 @@
 <li><p><strong>Irradiation calculations</strong>: Install <code class="docutils literal notranslate"><span class="pre">numexpr</span></code> for speed: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">numexpr</span></code></p></li>
 <li><p><strong>Hydrostatic equilibrium</strong>: Called infrequently (only when needed), not every step</p></li>
 </ol>
-<p>For large problems, consider:
-- Coarser time steps (larger <code class="docutils literal notranslate"><span class="pre">dt</span></code>)
-- Relaxed convergence criterion (larger <code class="docutils literal notranslate"><span class="pre">rtol</span></code>, e.g., 1e-6 instead of 1e-8)</p>
+<p>For large problems, consider:</p>
+<ul class="simple">
+<li><p>Coarser time steps (larger <code class="docutils literal notranslate"><span class="pre">dt</span></code>)</p></li>
+<li><p>Relaxed convergence criterion (larger <code class="docutils literal notranslate"><span class="pre">rtol</span></code>, e.g., 1e-6 instead of 1e-8)</p></li>
+<li><p>Reusing the preconditioner between steps with <code class="docutils literal notranslate"><span class="pre">Disk.advance(dt,</span> <span class="pre">recompute_preconditioner=False)</span></code></p></li>
+</ul>
 <p>You can also use the <code class="docutils literal notranslate"><span class="pre">debug=True</span></code> option in both <code class="docutils literal notranslate"><span class="pre">Gas/Dust</span></code> and <code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment</span></code> to print debugging information which can help pinpoint issues.</p>
 </section>
 <section id="temperature-structure">
@@ -212,7 +227,7 @@
 <h2>Frequency-dependent opacities<a class="headerlink" href="#frequency-dependent-opacities" title="Permalink to this heading"></a></h2>
 <p><strong>Q: Frequency-dependent opacities causing slow simulations</strong></p>
 <p>A: Use fewer wavelength bins in the star’s spectrum. For example, when calling <code class="docutils literal notranslate"><span class="pre">optool</span></code> to create your opacity file, use the format <code class="docutils literal notranslate"><span class="pre">-l</span> <span class="pre">lam_min</span> <span class="pre">lam_max</span> <span class="pre">N_lam</span></code> to specify fewer wavelength points:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">optool</span> <span class="o">-</span><span class="n">radmc</span> <span class="o">-</span><span class="n">l</span> <span class="mf">0.05</span> <span class="mi">10000</span> <span class="mi">60</span>  <span class="c1"># creates opacity file with 60 wavelength points</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>optool<span class="w"> </span>-radmc<span class="w"> </span>-l<span class="w"> </span><span class="m">0</span>.05<span class="w"> </span><span class="m">10000</span><span class="w"> </span><span class="m">60</span><span class="w">  </span><span class="c1"># creates opacity file with 60 wavelength points</span>
 </pre></div>
 </div>
 </section>
@@ -224,6 +239,10 @@
 <li><p><strong>Unphysical initial density</strong>: Very steep profiles or negative densities fail. Start with a shallower profile.</p></li>
 <li><p><strong>Missing parameters</strong>: For dust, you must provide <code class="docutils literal notranslate"><span class="pre">rhogas</span></code> and enroll a nonzero <code class="docutils literal notranslate"><span class="pre">alpha</span></code> (turbulent diffusion).</p></li>
 </ol>
+<p><strong>Q: Values did not change after modifying a fluid’s density</strong></p>
+<p>A: Derived quantities (<code class="docutils literal notranslate"><span class="pre">rho_eff</span></code>, pressure, opacities, and the totals of the radiative environment) are stored arrays, which are updated by <code class="docutils literal notranslate"><span class="pre">refresh()</span></code>, <code class="docutils literal notranslate"><span class="pre">advance()</span></code>, and <code class="docutils literal notranslate"><span class="pre">enforce_hydrostatic_equilibrium()</span></code>. After modifying <code class="docutils literal notranslate"><span class="pre">rho</span></code> directly (e.g. <code class="docutils literal notranslate"><span class="pre">gas.rho[:]</span> <span class="pre">=</span> <span class="pre">...</span></code>), call <code class="docutils literal notranslate"><span class="pre">Disk.refresh_fluids()</span></code> (or <code class="docutils literal notranslate"><span class="pre">gas.refresh()</span></code> for a single fluid).</p>
+<p><strong>Q: Reading a snapshot gives “all fluids must share the same temperature field”</strong></p>
+<p>A: <code class="docutils literal notranslate"><span class="pre">fld.FLD.create_from_snapshot</span></code> reads every <code class="docutils literal notranslate"><span class="pre">fluid-*</span></code> folder inside the snapshot directory. If the directory also contains folders from an older snapshot (e.g. <code class="docutils literal notranslate"><span class="pre">fluid-0</span></code> next to <code class="docutils literal notranslate"><span class="pre">fluid-000</span></code>), remove them or write the snapshot to a fresh directory.</p>
 </section>
 <section id="getting-help">
 <h2>Getting Help<a class="headerlink" href="#getting-help" title="Permalink to this heading"></a></h2>

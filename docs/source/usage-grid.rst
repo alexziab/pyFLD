@@ -31,7 +31,7 @@ The above function constructs a 1D array of cell interfaces from ``xmin`` to ``x
     zi = fld.grid.get_domain_with_ghosts(0, 1, Nx=1) * u.cm
     grid = fld.grid.Grid(xi, yi, zi, geometry='cartesian')
 
-Notice that the returned arrays from ``get_domain_with_ghosts`` are multiplied by the appropriate units before being passed to the ``Grid`` initializer. This is required as it ensures that unit conversions are handled correctly in all subsequent calculations.
+Notice that the returned arrays from ``get_domain_with_ghosts`` are multiplied by the appropriate units before being passed to the ``Grid`` initializer. This is recommended, as it ensures that unit conversions are handled correctly in all subsequent calculations; length-related arrays passed without units are interpreted in au.
 
 The resulting ``Grid`` object contains various attributes that are used in the calculations, such as the cell centers, cell volumes, and cell face areas, all of which are returned as ``astropy.Quantity`` objects with appropriate units. Inspired by the ``PLUTO`` code, the grid direction labels are ``x1``, ``x2``, and ``x3``, with corresponding index labels ``i``, ``j``, and ``k``, stored in C order (i.e., ``i`` is the fastest running index). Some examples:
 
@@ -56,3 +56,4 @@ Notes
 
 - In curvilinear geometries, angle-related arrays (i.e., *θ*, *φ*) should *not* be defined as ``astropy.Quantity`` objects, but rather as plain floats in radians. Keeping angles dimensionless simplifies many calculations involving surface areas, volumes, etc. ``pyFLD`` will internally strip units from angle-related inputs that are passed as ``astropy.Quantity`` objects during grid initialization.
 - Unless you know what you are doing, do not mix slices or indices from different directions (e.g., avoid using ``x1[grid.act2]``, ``dx2[grid.kbeg]``, etc.).
+- In spherical geometry, the grid also stores the index of the cell next to the midplane, ``grid.mid``, relative to the active cells: the last cell with :math:`\theta < \pi/2` if the grid covers the top half of a disk or both halves, and the first cell with :math:`\theta > \pi/2` if it only covers the bottom half. ``grid.midi`` is the index of the active cell interface closest to :math:`\pi/2`. Vertical integrations (e.g. hydrostatic equilibrium) start from the midplane, so :math:`\pi/2` should be a cell interface; a warning is printed otherwise. If no cell center lies at :math:`\pi/2` either, a second warning is printed, since the midplane is then not sampled by the grid at all.

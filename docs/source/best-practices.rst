@@ -66,13 +66,15 @@ Solver configuration
     Disk = fld.FLD.RadiativeEnvironment([gas], preconditioner='rescaled jacobi') # or 'rescaled ilu' if memory allows
     Disk.configure_solver(rtol=1e-6)
 
-**To speed up multiple ``advance()`` calls** (e.g., time evolution):
+**To speed up multiple** ``advance()`` **calls** (e.g., time evolution):
 
 .. code-block:: python
 
-    Disk.configure_solver(guess=True)  # Use previous solution as initial guess
+    # the previous solution is used as initial guess by default (guess=True)
     for _ in range(100):
-        Disk.advance(dt=1e5*u.yr)
+        Disk.advance(dt=1e5*u.yr, recompute_preconditioner=False) # reuse the preconditioner
+
+Note that each call to ``configure_solver`` resets all arguments that are not passed to their defaults, so pass all settings in a single call.
 
 Boundary conditions
 -------------------
@@ -133,7 +135,7 @@ Opacity functions
 
 **Automatic from frequency-dependent data** (recommended):
 
-When using frequency-dependent opacities with ``build_mean_opacities=True`` (default), Rosseland and Planck means are computed automatically. No need to enroll them.
+When a fluid is given frequency-dependent opacities (``kabs_wl``, ``ksca_wl``, ``g_wl``), Rosseland and Planck means are computed automatically during ``setup()``. No need to enroll them; any mean opacity you do enroll takes precedence.
 
 Viscosity
 ---------
@@ -193,7 +195,7 @@ Hydrostatic equilibrium
 
 **When to use:**
 
-For self-consistent disk structure (gas pressure support, dust settling), especially with multiple species.
+For self-consistent disk structure (gas pressure support, dust settling), especially with multiple species. The polar grid must have a cell interface at :math:`\pi/2` (the midplane), and can cover the top half, the bottom half, or both halves of the disk. Gas fluids are put in equilibrium first, and dust then settles with respect to the updated gas. The raw surface density of each fluid is conserved, also when an effective fraction (e.g. dust sublimation) is enrolled.
 
 **Best practice workflow:**
 
@@ -227,7 +229,7 @@ Validation & testing
 
 Test against known solutions before tackling complex models:
 
-Example: **1D diffusion** — Linear temperature profile (see `example-basic`)
+Example: **1D diffusion** — Linear temperature profile (see :doc:`example-basic`)
 
 **Convergence studies:**
 
@@ -252,7 +254,7 @@ Performance monitoring
     Disk.verbose = True  # Print solver iterations
     for i in range(10):
         Disk.advance(dt=1e6*u.yr)
-        print(f"Step {i}: iters={Disk.iters}")
+        print(f"Step {i}: iters={Disk.iters}") # -1 for the direct solver (preconditioner='none')
 
 **Profile the code** using the ``debug`` flag to identify bottlenecks:
 

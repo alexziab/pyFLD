@@ -110,7 +110,7 @@
 pip<span class="w"> </span>install<span class="w"> </span>.
 </pre></div>
 </div>
-<p>This will make <code class="docutils literal notranslate"><span class="pre">pyFLD</span></code> available for import in your Python environment.</p>
+<p>This will make <code class="docutils literal notranslate"><span class="pre">pyFLD</span></code> available for import in your Python environment. Note that this installs a copy of the package: after pulling updates (or editing the source), run <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code> again, otherwise scripts and notebooks outside the repository keep importing the old version. You can check which version is imported with <code class="docutils literal notranslate"><span class="pre">print(fld.__file__,</span> <span class="pre">fld.__version__)</span></code>.</p>
 </section>
 </section>
 

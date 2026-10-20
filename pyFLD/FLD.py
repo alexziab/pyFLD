@@ -73,7 +73,7 @@ class RadiativeEnvironment(fl._GenericFluid):
 
     _initialized_boundaries = False
 
-    def __init__(self, fluids, verbose=True,
+    def __init__(self, fluids, verbose=False,
                  preconditioner='ilu', constant_fluxlimiter=False,
                  implicit_viscosity=False, **kwargs):
         self._set_debug_name(**kwargs)

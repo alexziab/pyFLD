@@ -29,4 +29,7 @@ Since the snapshot system outputs a hierarchy of files, it also outputs the grid
 Notes
 -----
 
+- Enrolled functions (opacities, α, effective fraction, ``tau0``, ``col0``) are not stored in snapshots, and must be enrolled again after reading.
+- ``fld.FLD.create_from_snapshot`` reads every ``fluid-*`` folder in the snapshot directory, so write each snapshot to its own (or an emptied) directory.
+
 - The snapshot system has been tested very lightly. At present, it is not recommended to rely on it with the intent to restart a simulation at a later time, as it may not be robust to changes in the package. However, it can be useful for short-term storage of quantities that are expensive to compute such as density and temperature. Feedback on the snapshot system is very welcome, and it will likely be improved in the future.

@@ -20,13 +20,24 @@ For very large problems (> 10⁸ cells), the ILU preconditioner may be expensive
 
     Disk = fld.FLD.RadiativeEnvironment([gas], preconditioner='jacobi')
 
-You can also adjust solver tolerance and iteration limit:
+You can also adjust the solver tolerance and/or iteration limit:
 
 .. code-block:: python
 
-    Disk.configure_solver(rtol=1e-6, maxiter=20000)
+    Disk.configure_solver(rtol=1e-4, maxiter=20000)
 
 Lower tolerance (stricter convergence) slows down the solver. Increase ``maxiter`` if needed.
+
+**Q: advance() raises "RuntimeError: ... did not converge"**
+
+A: The linear solver did not reach the requested tolerance within ``maxiter`` iterations (or the direct solver returned non-finite values). In that case ``advance()`` leaves the temperature and radiation field unchanged, so you can catch the error and retry, e.g. with a smaller time step or a different preconditioner:
+
+.. code-block:: python
+
+    try:
+        Disk.advance(dt=dt)
+    except RuntimeError:
+        Disk.advance(dt=dt/10)
 
 **Q: Solution oscillates or is unphysical**
 
@@ -38,6 +49,8 @@ A: Check your boundary conditions. The most common mistake is using the wrong bo
     fld.grid.BOUNDARY_REFLECTIVE   # zero-gradient (reflective) boundary
 
 Also verify that your opacities are physically reasonable (not negative or extremely large).
+
+If, despite that, the solution still oscillates, try reducing the timestep (stable doesn't mean accurate!) or using under-relaxation, where the new and old solutions are weighed together. Calling ``advance(dt, uf=0.4)`` gives a 40% weight to the old solution and 60% to the new one, which can help stabilize things.
 
 **Q: Solver runs but temperature doesn't change**
 
@@ -51,23 +64,21 @@ Boundary Conditions
 
 **Q: What are the six boundary indices?**
 
-A: The order is: ``[inner_radial, outer_radial, inner_polar, outer_polar, inner_azimuthal, outer_azimuthal]``
+A: The order is: ``[lower_x1, upper_x1, lower_x2, upper_x2, lower_x3, upper_x3]``. In spherical coordinates, this corresponds to ``[inner_radial, outer_radial, inner_polar, outer_polar, inner_azimuthal, outer_azimuthal]``
 
 In code: ``bounds = [bound_0, bound_1, bound_2, bound_3, bound_4, bound_5]``
 
-**Q: Getting boundary error despite calling declare_boundaries()**
+**Q: Getting a boundary error when calling advance()**
 
-A: Make sure you're calling it *before* ``setup()``:
+A: Boundaries must be declared before the first call to ``advance()``:
 
 .. code-block:: python
 
-    # WRONG
-    Disk.setup()  # This checks for boundaries
+    Disk = fld.FLD.RadiativeEnvironment([gas])
     Disk.declare_boundaries(bounds, vals)
+    Disk.advance(dt=1*u.yr)
 
-    # CORRECT
-    Disk.declare_boundaries(bounds, vals)
-    Disk.setup()
+All 6 boundaries must be declared, as ``BOUNDARY_FIXEDVALUE`` or ``BOUNDARY_REFLECTIVE``; ``declare_boundaries`` raises a ``ValueError`` if any of them is ``BOUNDARY_UNDEFINED``. For directions with a single cell, use ``BOUNDARY_REFLECTIVE``.
 
 Opacities & Units
 -----------------
@@ -89,28 +100,38 @@ If values are unexpectedly large or small, double-check the file is not corrupte
 
 **Q: Unit conversion errors when setting density/temperature**
 
-A: Always be explicit about units:
+A: Plain arrays are accepted and interpreted in cgs (g/cm^3 for density, K for temperature), but it is safer to be explicit about units, so that a value in the wrong unit raises an error instead of being silently misinterpreted:
 
 .. code-block:: python
 
-    # WRONG – will fail
+    # works, but assumes g/cm^3
     gas.set_density(1e-10 * np.ones(grid.shape))
 
-    # CORRECT
+    # explicit, and recommended
     from astropy import units as u
     gas.set_density(1e-10 * u.g/u.cm**3 * np.ones(grid.shape))
 
+**Q: "UnitTypeError" during advance() with irradiation**
+
+A: An enrolled opacity function likely returns a plain number instead of a quantity with units of cm^2/g, so the optical depth is not dimensionless. Make sure enrolled opacities carry units, e.g. ``Gas.enroll_kappaPstar(lambda f: 1e-10 * u.cm**2/u.g)``.
+
 **Q: Grid coordinates don't have the right units**
 
-A: Length coordinates (x1, x2, x3 in Cartesian; x1 in cylindrical/spherical) must have units. Angles must be dimensionless in radians:
+A: Length coordinates (x1, x2, x3 in Cartesian; x1 in cylindrical/spherical) are interpreted in au if given as plain arrays; passing them with explicit units is recommended. Angles must be dimensionless in radians:
 
 .. code-block:: python
 
     # CORRECT spherical grid
     ri = fld.grid.get_domain_with_ghosts(0.1, 100, Nx=64) * u.au
-    thi = fld.grid.get_domain_with_ghosts(0.5, np.pi, Nx=32)  # plain radians, no units!
+    thi = fld.grid.get_domain_with_ghosts(0.5, np.pi-0.5, Nx=32)  # plain radians, no units!
     phii = fld.grid.get_domain_with_ghosts(0, 2*np.pi, Nx=1)  # plain radians
     grid = fld.grid.Grid(ri, thi, phii, geometry='spherical')
+
+Keep the polar range (including ghost cells) within :math:`[0, \pi]`.
+
+**Q: Warning "no cell interface at pi/2" when creating a spherical grid**
+
+A: The midplane falls inside a cell, so vertical integrations (e.g. hydrostatic equilibrium) will not start exactly at the midplane. If the additional warning "no cell center at pi/2 either" appears, the midplane is not sampled by the grid at all, and quantities at ``grid.mid`` are offset from it. Choose the polar range and number of cells such that :math:`\pi/2` is a cell interface, e.g. ``get_domain_with_ghosts(np.pi/2-0.3, np.pi/2, Nx=32)`` for the top half of a disk, or an even number of cells in a range symmetric around :math:`\pi/2` for a full disk.
 
 Memory & Performance
 --------------------
@@ -138,8 +159,10 @@ A: Profile your bottleneck:
 3. **Hydrostatic equilibrium**: Called infrequently (only when needed), not every step
 
 For large problems, consider:
+
 - Coarser time steps (larger ``dt``)
 - Relaxed convergence criterion (larger ``rtol``, e.g., 1e-6 instead of 1e-8)
+- Reusing the preconditioner between steps with ``Disk.advance(dt, recompute_preconditioner=False)``
 
 You can also use the ``debug=True`` option in both ``Gas/Dust`` and ``RadiativeEnvironment`` to print debugging information which can help pinpoint issues.
 
@@ -160,7 +183,7 @@ Frequency-dependent opacities
 
 A: Use fewer wavelength bins in the star's spectrum. For example, when calling ``optool`` to create your opacity file, use the format ``-l lam_min lam_max N_lam`` to specify fewer wavelength points:
 
-.. code-block:: python
+.. code-block:: bash
 
     optool -radmc -l 0.05 10000 60  # creates opacity file with 60 wavelength points
 
@@ -173,6 +196,14 @@ A: Causes:
 
 1. **Unphysical initial density**: Very steep profiles or negative densities fail. Start with a shallower profile.
 2. **Missing parameters**: For dust, you must provide ``rhogas`` and enroll a nonzero ``alpha`` (turbulent diffusion).
+
+**Q: Values did not change after modifying a fluid's density**
+
+A: Derived quantities (``rho_eff``, pressure, opacities, and the totals of the radiative environment) are stored arrays, which are updated by ``refresh()``, ``advance()``, and ``enforce_hydrostatic_equilibrium()``. After modifying ``rho`` directly (e.g. ``gas.rho[:] = ...``), call ``Disk.refresh_fluids()`` (or ``gas.refresh()`` for a single fluid).
+
+**Q: Reading a snapshot gives "all fluids must share the same temperature field"**
+
+A: ``fld.FLD.create_from_snapshot`` reads every ``fluid-*`` folder inside the snapshot directory. If the directory also contains folders from an older snapshot (e.g. ``fluid-0`` next to ``fluid-000``), remove them or write the snapshot to a fresh directory.
 
 Getting Help
 ------------
