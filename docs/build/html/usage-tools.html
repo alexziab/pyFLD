@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>0. Various tools &mdash; pyFLD 0.4.3 documentation</title>
+  <title>0. Various tools &mdash; pyFLD 0.4.4 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -111,7 +111,7 @@
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">get_tau0_Flock_2019(fluid)</span></code>: Returns the gray optical depth between the stellar surface and the inner radial boundary of the grid, following the prescription of Flock et al. (2019). Intended to be passed to <code class="docutils literal notranslate"><span class="pre">fluid.enroll_tau0</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">get_col0_Flock_2019(fluid)</span></code>: Similar, but returns the column density for frequency-dependent irradiation. Intended to be passed to <code class="docutils literal notranslate"><span class="pre">fluid.enroll_col0</span></code>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">get_fraction_Isella_Natta_2005(fluid)</span></code>: Returns a dust sublimation fraction following Isella &amp; Natta (2005), useful for modeling the dust sublimation front near the star. Intended to be passed to <code class="docutils literal notranslate"><span class="pre">fluid.enroll_effective_fraction</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_fraction_Isella_Natta_2005(fluid,</span> <span class="pre">gas=None)</span></code>: Returns a dust sublimation fraction following Isella &amp; Natta (2005), useful for modeling the dust sublimation front near the star. Intended to be passed to <code class="docutils literal notranslate"><span class="pre">fluid.enroll_effective_fraction</span></code>. The sublimation temperature depends on the gas density, so pass the gas through a wrapper, e.g. <code class="docutils literal notranslate"><span class="pre">Dust.enroll_effective_fraction(lambda</span> <span class="pre">d:</span> <span class="pre">fld.tools.get_fraction_Isella_Natta_2005(d,</span> <span class="pre">gas=Gas))</span></code> (see example 8). Without <code class="docutils literal notranslate"><span class="pre">gas</span></code>, the dust density is used and the sublimation temperature is somewhat underestimated. Like all enrolled functions, it is not stored in snapshots and must be re-enrolled, with the reloaded gas, after <code class="docutils literal notranslate"><span class="pre">create_from_snapshot</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">get_alpha_Cecil_Flock_2024(fluid)</span></code>: Returns a spatially varying turbulent viscosity parameter <span class="math notranslate nohighlight">\(\alpha\)</span> profile following Cecil &amp; Flock (2024). Intended to be passed to <code class="docutils literal notranslate"><span class="pre">fluid.enroll_alpha</span></code>.</p></li>
 </ul>
 <p><strong>Miscellaneous:</strong></p>

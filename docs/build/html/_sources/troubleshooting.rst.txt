@@ -64,7 +64,7 @@ Boundary Conditions
 
 **Q: What are the six boundary indices?**
 
-A: The order is: ``[lower_x1, upper_x1, lower_x2, upper_x2, lower_x3, upper_x3]``. In spherical coordinates, this corresponds to ``[inner_radial, outer_radial, inner_polar, outer_polar, inner_azimuthal, outer_azimuthal]``
+A: The order is: ``[lower_x1, upper_x1, lower_x2, upper_x2, lower_x3, upper_x3]``. In spherical coordinates, this corresponds to ``[inner_radial, outer_radial, inner_polar, outer_polar, lower_azimuthal, upper_azimuthal]``
 
 In code: ``bounds = [bound_0, bound_1, bound_2, bound_3, bound_4, bound_5]``
 
@@ -121,7 +121,7 @@ A: Length coordinates (x1, x2, x3 in Cartesian; x1 in cylindrical/spherical) are
 
 .. code-block:: python
 
-    # CORRECT spherical grid
+    # a spherical grid
     ri = fld.grid.get_domain_with_ghosts(0.1, 100, Nx=64) * u.au
     thi = fld.grid.get_domain_with_ghosts(0.5, np.pi-0.5, Nx=32)  # plain radians, no units!
     phii = fld.grid.get_domain_with_ghosts(0, 2*np.pi, Nx=1)  # plain radians

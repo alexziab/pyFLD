@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pyFLD package &mdash; pyFLD 0.4.3 documentation</title>
+  <title>pyFLD package &mdash; pyFLD 0.4.4 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -332,6 +332,12 @@ Q_visc = (9/4) alpha sqrt(gamma) P Omega_K. Works in cylindrical/spherical geome
 <dt class="field-even">raises ValueError<span class="colon">:</span></dt>
 <dd class="field-even"><p>If star object is not available</p>
 </dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>new_dt</strong> – Suggested new timestep based on viscous heating: dt &lt; e/Q_visc</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p>astropy.units.Quantity [s]</p>
+</dd>
 </dl>
 </section>
 </dd></dl>
@@ -395,11 +401,6 @@ fluids after they have been put in equilibrium (default: None)</p></li>
 <dd><p>Apply boundary conditions to FLD matrix and RHS vector.</p>
 </dd></dl>
 
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.eng">
-<span class="sig-name descname"><span class="pre">eng</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.eng" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.get_flux_limiter">
 <span class="sig-name descname"><span class="pre">get_flux_limiter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">R</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.get_flux_limiter" title="Permalink to this definition"></a></dt>
@@ -441,11 +442,6 @@ have resolution &gt; 1 (for diffusion terms). Matrix has 7 diagonals for
 3D (center + 6 off-diagonals).</p>
 </dd></dl>
 
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.prs">
-<span class="sig-name descname"><span class="pre">prs</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.prs" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.refresh_fluids">
 <span class="sig-name descname"><span class="pre">refresh_fluids</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.refresh_fluids" title="Permalink to this definition"></a></dt>
@@ -465,11 +461,6 @@ temperature. Called by setup(), refresh_fluids(), update_fluids(),
 enforce_hydrostatic_equilibrium(), and _rebuild_after_read().
 Does not refresh the fluids themselves; see refresh_fluids() for that.</p>
 </dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.rho">
-<span class="sig-name descname"><span class="pre">rho</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.rho" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.setup">
@@ -880,12 +871,13 @@ class (e.g., x1i, x2i, x3i, geometry).</p></li>
 <p>Create a spherical grid and export to RADMC3D:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ri</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">au</span>   <span class="c1"># 100 radial cells</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">thi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>     <span class="c1"># 50 polar cells</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">rmc_grid</span> <span class="o">=</span> <span class="n">radmc_helper</span><span class="o">.</span><span class="n">Grid</span><span class="p">(</span><span class="n">x1i</span><span class="o">=</span><span class="n">ri</span><span class="p">,</span> <span class="n">x2i</span><span class="o">=</span><span class="n">thi</span><span class="p">,</span> <span class="n">geometry</span><span class="o">=</span><span class="s1">&#39;spherical&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">phii</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">])</span>      <span class="c1"># axisymmetric</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rmc_grid</span> <span class="o">=</span> <span class="n">radmc_helper</span><span class="o">.</span><span class="n">Grid</span><span class="p">(</span><span class="n">x1i</span><span class="o">=</span><span class="n">ri</span><span class="p">,</span> <span class="n">x2i</span><span class="o">=</span><span class="n">thi</span><span class="p">,</span> <span class="n">x3i</span><span class="o">=</span><span class="n">phii</span><span class="p">,</span> <span class="n">geometry</span><span class="o">=</span><span class="s1">&#39;spherical&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">rmc_grid</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;amr_grid.inp&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Load from an existing file:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">rmc_grid</span> <span class="o">=</span> <span class="n">radmc_helper</span><span class="o">.</span><span class="n">Grid</span><span class="p">()</span> <span class="c1"># will raise a warning</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">rmc_grid</span> <span class="o">=</span> <span class="n">radmc_helper</span><span class="o">.</span><span class="n">Grid</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">rmc_grid</span><span class="o">.</span><span class="n">read_from_file</span><span class="p">(</span><span class="s1">&#39;amr_grid.inp&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Nr=</span><span class="si">{</span><span class="n">rmc_grid</span><span class="o">.</span><span class="n">NX1</span><span class="si">}</span><span class="s2">, Ntheta=</span><span class="si">{</span><span class="n">rmc_grid</span><span class="o">.</span><span class="n">NX2</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
@@ -1255,9 +1247,9 @@ formatted astropy quantities with proper dimensional units.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
-<li><p><strong>rho</strong> (<em>astropy.units.Quantity</em>) – Dust volume density array with shape (Nr_species, Nr, Ntheta, Nphi)
+<li><p><strong>rho</strong> (<em>astropy.units.Quantity</em>) – Dust volume density array with shape (Nr_species, Nphi, Ntheta, Nr)
 Units: [g/cm3].</p></li>
-<li><p><strong>tmp</strong> (<em>astropy.units.Quantity</em>) – Dust temperature array with shape (Nr_species, Nr, Ntheta, Nphi)
+<li><p><strong>tmp</strong> (<em>astropy.units.Quantity</em>) – Dust temperature array with shape (Nr_species, Nphi, Ntheta, Nr)
 Units: [K].</p></li>
 <li><p><em>Requires</em></p></li>
 <li><p><em>——–</em></p></li>
@@ -1272,14 +1264,14 @@ Units: [K].</p></li>
 <p class="rubric">Notes</p>
 <ul class="simple">
 <li><p>Expected files in directory: amr_grid.inp, dust_density.binp, dust_temperature.bdat</p></li>
-<li><p>Array axis order transposed to (Nr_species, Nr, Ntheta, Nphi)</p></li>
+<li><p>Array axis order transposed to (Nr_species, Nphi, Ntheta, Nr)</p></li>
 <li><p>Current working directory temporarily changed during file read, then restored</p></li>
 <li><p>Requires successful RADMC3D mctherm run</p></li>
 </ul>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># After RADMC3D mctherm run</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">rho</span><span class="p">,</span> <span class="n">tmp</span> <span class="o">=</span> <span class="n">read_and_format_radmc_data</span><span class="p">(</span><span class="n">dirc</span><span class="o">=</span><span class="s1">&#39;./radmc_output/&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Density shape: </span><span class="si">{</span><span class="n">rho</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># (Nr_species, Nr, Ntheta, Nphi)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Density shape: </span><span class="si">{</span><span class="n">rho</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># (Nr_species, Nphi, Ntheta, Nr)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Temperature range: </span><span class="si">{</span><span class="n">tmp</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">tmp</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Density units: </span><span class="si">{</span><span class="n">rho</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
@@ -1427,9 +1419,8 @@ Default is empty list.</p></li>
 <dt class="sig sig-object py" id="pyFLD.radmc_helper.write_flat_opacities">
 <span class="sig-prename descclassname"><span class="pre">pyFLD.radmc_helper.</span></span><span class="sig-name descname"><span class="pre">write_flat_opacities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kabs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'./'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flnm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dustkappa_flat.inp'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.radmc_helper.write_flat_opacities" title="Permalink to this definition"></a></dt>
 <dd><p>Write dust opacity file in RADMC3D format.</p>
-<p>Outputs a wavelength-dependent dust opacity to dustkappa_*.inp in
-RADMC3D format. Includes absorption and scattering opacities (scattering
-set to zero, phase function albedo to zero).</p>
+<p>Outputs a fixed, non-wavelength-dependent dust opacity to dustkappa_*.inp in
+RADMC3D format. Scattering opacities and asymmetry factors are set to zero.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>RADMC3D expects wavelengths in microns in the output file. This function
@@ -1448,9 +1439,8 @@ but properly handles astropy quantities with any length unit.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>wl</strong> (<em>array_like</em><em> [</em><em>cm</em><em>] or </em><em>astropy.units.Quantity</em>) – Wavelength array. Can be astropy quantity with any length unit, or
 numpy array (interpreted as cm if plain array). Output will be in um.</p></li>
-<li><p><strong>kabs</strong> (<em>array_like</em><em> [</em><em>cm2/g</em><em>] or </em><em>astropy.units.Quantity</em>) – Absorption opacity (mass absorption coefficient). Can be astropy
-quantity or numpy array (interpreted as cm2/g if plain array).
-Must have same shape as wl. Scattering and albedo set to zero.</p></li>
+<li><p><strong>kabs</strong> (<em>float</em><em> [</em><em>cm2/g</em><em>] or </em><em>astropy.units.Quantity</em>) – Absorption opacity (mass absorption coefficient). Can be astropy
+quantity or float (interpreted as cm2/g if float).</p></li>
 <li><p><strong>dirc</strong> (<em>str</em><em>, </em><em>optional</em>) – Output directory. Default is <code class="docutils literal notranslate"><span class="pre">'./'</span></code>.</p></li>
 <li><p><strong>flnm</strong> (<em>str</em><em>, </em><em>optional</em>) – Output filename. Default is <code class="docutils literal notranslate"><span class="pre">'dustkappa_flat.inp'</span></code>.</p></li>
 </ul>
@@ -1471,15 +1461,13 @@ Must have same shape as wl. Scattering and albedo set to zero.</p></li>
 <li><p>Compatible with OpTool and RADMC3D</p></li>
 </ul>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Wavelength-dependent absorption (e.g., silicate)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">wl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">um</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">kabs</span> <span class="o">=</span> <span class="mf">1e-3</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">cm</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">u</span><span class="o">.</span><span class="n">g</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">((</span><span class="n">wl</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s1">&#39;um&#39;</span><span class="p">)</span> <span class="o">-</span> <span class="mi">10</span><span class="p">)</span><span class="o">/</span><span class="mi">5</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">write_flat_opacities</span><span class="p">(</span><span class="n">wl</span><span class="p">,</span> <span class="n">kabs</span><span class="p">,</span> <span class="n">dirc</span><span class="o">=</span><span class="s1">&#39;./&#39;</span><span class="p">,</span> <span class="n">flnm</span><span class="o">=</span><span class="s1">&#39;dustkappa_silicate.inp&#39;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">wl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">um</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">kabs</span> <span class="o">=</span> <span class="mf">1e-3</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">cm</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">u</span><span class="o">.</span><span class="n">g</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">write_flat_opacities</span><span class="p">(</span><span class="n">wl</span><span class="p">,</span> <span class="n">kabs</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Constant opacity</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">kabs_const</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">wl</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e-2</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">cm</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">u</span><span class="o">.</span><span class="n">g</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">write_flat_opacities</span><span class="p">(</span><span class="n">wl</span><span class="p">,</span> <span class="n">kabs_const</span><span class="p">,</span> <span class="n">dirc</span><span class="o">=</span><span class="s1">&#39;./&#39;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Using plain array (interpreted as cm and cm2/g)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">write_flat_opacities</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">10</span><span class="p">]),</span> <span class="mf">1e-3</span><span class="p">)</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -1970,14 +1958,18 @@ relation Σ = ρ * ε * (R - 3*R_*).</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="pyFLD.tools.get_fraction_Isella_Natta_2005">
-<span class="sig-prename descclassname"><span class="pre">pyFLD.tools.</span></span><span class="sig-name descname"><span class="pre">get_fraction_Isella_Natta_2005</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fluid</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.tools.get_fraction_Isella_Natta_2005" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">pyFLD.tools.</span></span><span class="sig-name descname"><span class="pre">get_fraction_Isella_Natta_2005</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fluid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.tools.get_fraction_Isella_Natta_2005" title="Permalink to this definition"></a></dt>
 <dd><p>Compute dust sublimation fraction following Isella &amp; Natta (2005).</p>
 <p>Calculates the effective dust fraction accounting for sublimation at
 high temperatures using a smooth transition function. The sublimation
-temperature depends on dust density via T_subl = 2000 * ρ^0.0195 K.</p>
+temperature depends on gas density via T_subl = 2000 * ρ_gas^0.0195 K.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>fluid</strong> (<em>GenericFluid</em><em> or </em><em>higher class</em>) – Fluid object with temperature and density fields. Ideally Dust.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fluid</strong> (<em>GenericFluid</em><em> or </em><em>higher class</em>) – Fluid object with temperature and density fields. Ideally Dust.</p></li>
+<li><p><strong>gas</strong> (<em>GenericFluid</em><em> or </em><em>higher class</em><em>, </em><em>optional</em>) – Gas object with a density field. If not provided, the density of
+<cite>fluid</cite> is used instead, assuming it’s the gas component.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Dust sublimation fraction (0 to 1) across the domain</p>
@@ -1986,6 +1978,18 @@ temperature depends on dust density via T_subl = 2000 * ρ^0.0195 K.</p>
 <dd class="field-odd"><p>ndarray</p>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<p>Pass the gas through a wrapper, since enrolled functions only receive the fluid:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Dust</span><span class="o">.</span><span class="n">enroll_effective_fraction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="n">fld</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">get_fraction_Isella_Natta_2005</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">gas</span><span class="o">=</span><span class="n">Gas</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Enrolled functions are not stored in snapshots. After reading one back,
+re-enroll with the reloaded gas:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">R</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">FLD</span><span class="o">.</span><span class="n">create_from_snapshot</span><span class="p">(</span><span class="n">dirc</span><span class="o">=</span><span class="s1">&#39;./&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;model&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Gas</span><span class="p">,</span> <span class="n">Dust</span> <span class="o">=</span> <span class="n">R</span><span class="o">.</span><span class="n">fluids</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Dust</span><span class="o">.</span><span class="n">enroll_effective_fraction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="n">fld</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">get_fraction_Isella_Natta_2005</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">gas</span><span class="o">=</span><span class="n">Gas</span><span class="p">))</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py function">
@@ -2222,7 +2226,7 @@ to astropy Quantity objects.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="pyFLD.tools.toArray">
-<span class="sig-prename descclassname"><span class="pre">pyFLD.tools.</span></span><span class="sig-name descname"><span class="pre">toArray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.tools.toArray" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">pyFLD.tools.</span></span><span class="sig-name descname"><span class="pre">toArray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.tools.toArray" title="Permalink to this definition"></a></dt>
 <dd><p>Convert astropy Quantity to numpy array (removes units).</p>
 <p>If input is a Quantity, converts to specified unit and returns array.
 If input is not a Quantity, converts to numpy array.</p>
@@ -2230,7 +2234,7 @@ If input is not a Quantity, converts to numpy array.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>q</strong> (<em>array-like</em><em> or </em><em>astropy.units.Quantity</em>) – Input Quantity or array</p></li>
-<li><p><strong>unit</strong> (<em>str</em><em> or </em><em>astropy.units.Unit</em><em>, </em><em>optional</em>) – Target unit for conversion (default: ‘’)</p></li>
+<li><p><strong>unit</strong> (<em>str</em><em> or </em><em>astropy.units.Unit</em><em>, </em><em>optional</em>) – Target unit for conversion</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>

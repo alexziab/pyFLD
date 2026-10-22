@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Troubleshooting &amp; FAQ &mdash; pyFLD 0.4.3 documentation</title>
+  <title>Troubleshooting &amp; FAQ &mdash; pyFLD 0.4.4 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -136,7 +136,7 @@
 <section id="boundary-conditions">
 <h2>Boundary Conditions<a class="headerlink" href="#boundary-conditions" title="Permalink to this heading"></a></h2>
 <p><strong>Q: What are the six boundary indices?</strong></p>
-<p>A: The order is: <code class="docutils literal notranslate"><span class="pre">[lower_x1,</span> <span class="pre">upper_x1,</span> <span class="pre">lower_x2,</span> <span class="pre">upper_x2,</span> <span class="pre">lower_x3,</span> <span class="pre">upper_x3]</span></code>. In spherical coordinates, this corresponds to <code class="docutils literal notranslate"><span class="pre">[inner_radial,</span> <span class="pre">outer_radial,</span> <span class="pre">inner_polar,</span> <span class="pre">outer_polar,</span> <span class="pre">inner_azimuthal,</span> <span class="pre">outer_azimuthal]</span></code></p>
+<p>A: The order is: <code class="docutils literal notranslate"><span class="pre">[lower_x1,</span> <span class="pre">upper_x1,</span> <span class="pre">lower_x2,</span> <span class="pre">upper_x2,</span> <span class="pre">lower_x3,</span> <span class="pre">upper_x3]</span></code>. In spherical coordinates, this corresponds to <code class="docutils literal notranslate"><span class="pre">[inner_radial,</span> <span class="pre">outer_radial,</span> <span class="pre">inner_polar,</span> <span class="pre">outer_polar,</span> <span class="pre">lower_azimuthal,</span> <span class="pre">upper_azimuthal]</span></code></p>
 <p>In code: <code class="docutils literal notranslate"><span class="pre">bounds</span> <span class="pre">=</span> <span class="pre">[bound_0,</span> <span class="pre">bound_1,</span> <span class="pre">bound_2,</span> <span class="pre">bound_3,</span> <span class="pre">bound_4,</span> <span class="pre">bound_5]</span></code></p>
 <p><strong>Q: Getting a boundary error when calling advance()</strong></p>
 <p>A: Boundaries must be declared before the first call to <code class="docutils literal notranslate"><span class="pre">advance()</span></code>:</p>
@@ -174,7 +174,7 @@
 <p>A: An enrolled opacity function likely returns a plain number instead of a quantity with units of cm^2/g, so the optical depth is not dimensionless. Make sure enrolled opacities carry units, e.g. <code class="docutils literal notranslate"><span class="pre">Gas.enroll_kappaPstar(lambda</span> <span class="pre">f:</span> <span class="pre">1e-10</span> <span class="pre">*</span> <span class="pre">u.cm**2/u.g)</span></code>.</p>
 <p><strong>Q: Grid coordinates don’t have the right units</strong></p>
 <p>A: Length coordinates (x1, x2, x3 in Cartesian; x1 in cylindrical/spherical) are interpreted in au if given as plain arrays; passing them with explicit units is recommended. Angles must be dimensionless in radians:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># CORRECT spherical grid</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># a spherical grid</span>
 <span class="n">ri</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_domain_with_ghosts</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">au</span>
 <span class="n">thi</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_domain_with_ghosts</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>  <span class="c1"># plain radians, no units!</span>
 <span class="n">phii</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">get_domain_with_ghosts</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">Nx</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># plain radians</span>
