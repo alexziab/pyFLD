@@ -499,7 +499,7 @@ def get_fraction_Isella_Natta_2005(fluid, gas=None):
     Arguments
     ----------
     fluid : GenericFluid or higher class
-        Fluid object with temperature and density fields. Ideally Dust.
+        Fluid object with temperature and density fields.
     gas : GenericFluid or higher class, optional
         Gas object with a density field. If not provided, the density of
         `fluid` is used instead, assuming it's the gas component.

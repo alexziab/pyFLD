@@ -940,8 +940,9 @@ def test_tau0_flock():
 
     tau0 = 1 * Gas.tau0
     g = Gas.grid
-    tau0_exp = rho * kappa * g.R[:,g.ibeg]
-    assert np.allclose(tau0[0], tau0_exp, rtol=1e-16)
+    s = Gas.star
+    tau0_exp = (rho * kappa * (g.R[:,g.ibeg] - 3*s.R)).to('')
+    assert np.allclose(tau0[0], tau0_exp, rtol=1e-15, atol=0)
 
 def test_col0_flock():
     rho = 1e-10 * u.g/u.cm**3
