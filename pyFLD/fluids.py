@@ -3,6 +3,12 @@ from astropy import constants as const, units as u
 from . import debug_state as dbg, grid as gr, tools as tb, star as st
 from scipy.interpolate import interp1d
 
+# enrolled getters are not stored in snapshots (see skipped_keys); these are reported on reload
+_enrollable_getters = ['get_alpha', 'get_effective_fraction', 'get_tau0', 'get_col0']
+_userdef_opacity_flags = {'get_kappaR': 'userdef_Rosseland_opacity',
+                          'get_kappaP': 'userdef_Planck_opacity',
+                          'get_kappaPstar': 'userdef_stellar_opacity'}
+
 class _GenericFluid:
     """
         Base class for fluid solvers, not to be used directly.
@@ -558,6 +564,16 @@ class _RadiativeFluid(_GenericFluid):
 
         self._pop_region()
 
+    def _check_enrolled_unit(self, func, unit, name):
+        # enrolled getters must return Quantities; a bare number would only fail much later in advance().
+        # Evaluated once at enrollment; skipped if the fluid isn't ready yet (e.g. rho_eff before setup())
+        try: q = func(self)
+        except Exception: return
+        if not tb.isQuantity(q) or not q.unit.is_equivalent(unit):
+            got = q.unit if tb.isQuantity(q) else type(q).__name__
+            raise ValueError(f"{self.get_prefix()}: enrolled {name} must return a Quantity in {unit} "
+                             f"(e.g. value * u.Unit('{unit}')), got {got}")
+
     def build_mean_opacity_interpolators(self, T=None):
         """
         Construct temperature-interpolated mean opacity functions.
@@ -658,6 +674,7 @@ class _RadiativeFluid(_GenericFluid):
         tools.get_gas_Rosseland_opacity_Freedman_2008 : Helper function for gas opacities
         """
         self._push_region("enroll_kappaR")
+        self._check_enrolled_unit(func, 'cm2/g', 'kappaR')
         self.userdef_Rosseland_opacity = True
         self.get_kappaR = func # for Rosseland mean opacity
         self._pop_region()
@@ -696,6 +713,7 @@ class _RadiativeFluid(_GenericFluid):
         tools.get_gas_Planck_opacity_Freedman_2008 : Helper function for gas opacities
         """
         self._push_region("enroll_kappaP")
+        self._check_enrolled_unit(func, 'cm2/g', 'kappaP')
         self.userdef_Planck_opacity = True
         self.get_kappaP = func # for Planck mean opacity
         self._pop_region()
@@ -737,6 +755,7 @@ class _RadiativeFluid(_GenericFluid):
         enroll_tau0 : Register optical depth function
         """
         self._push_region("enroll_kappaPstar")
+        self._check_enrolled_unit(func, 'cm2/g', 'kappaPstar')
         self.userdef_stellar_opacity = True
         self.get_kappaPstar = func # for stellar opacity
         self._pop_region()
@@ -822,6 +841,7 @@ class _RadiativeFluid(_GenericFluid):
         tools.compute_mean_opacities : Opacity computations from spectral data
         """
         self._push_region("enroll_col0")
+        self._check_enrolled_unit(func, 'g/cm2', 'col0')
         self.get_col0 = func
         self._pop_region()
 
@@ -908,7 +928,7 @@ class _RadiativeFluid(_GenericFluid):
         self._push_region("compute_cell_optical_depth")
         if self.irradiation == 'gray': kappa = self.kappaPstar
         else: kappa = self.kabs_wl[:,None,None,None] # type: ignore[operator]
-        self.dtau = (kappa * self.rho_eff * self.grid.dx1)
+        self.dtau = (kappa * self.rho_eff * self.grid.dx1) 
         self._pop_region()
 
     def refresh(self):
@@ -933,9 +953,14 @@ class _RadiativeFluid(_GenericFluid):
         tb.mkdir(model_dirc)
 
         # skip getters, derivatives, and objects
-        skipped_keys = ['get_col0', 'get_tau0', 'get_alpha',
+        skipped_keys = ['get_col0', 'get_tau0', 'get_alpha', 'get_effective_fraction',
                         'get_kappaP', 'get_kappaR', 'get_kappaPstar',
                         'prs', 'eng', 'Er', 'grid', 'star', 'dtau', 'rho_eff']
+
+        # record which getters were enrolled (instance attributes, not class defaults).
+        # Opacity getters built from kabs_wl are rebuilt on reload, so they only count if user-defined
+        self._enrolled = [k for k in _enrollable_getters if k in self.__dict__] \
+                       + [k for k, flag in _userdef_opacity_flags.items() if getattr(self, flag)]
 
         tb.extract_and_store_params(self, dirc=model_dirc,
                                     skipped_keys=skipped_keys)
@@ -1315,6 +1340,12 @@ def create_from_snapshot(dirc='./', name='fluid'):
     # Use the create_from_snapshot() function to
     # fully init a fresh object instead.
     tb.read_and_assign_params(fluid, dirc=model_dirc)
+
+    # older snapshots don't record _enrolled; the opacity flags are the best we have
+    enrolled = d.get('_enrolled', [k for k, flag in _userdef_opacity_flags.items() if d.get(flag)])
+    if enrolled:
+        fluid._log_warning(f"snapshot used enrolled {enrolled}; these are not stored and now return "
+                           "the defaults (kappa=0, alpha=0, eps=1, tau0=0). Re-enroll them before advancing")
 
     fluid.rho = tb.try_reading(f'{model_dirc}/rho_cgs.dbl', u.g/u.cm**3, shape=grid.shape, force=True)
     fluid.tmp = tb.try_reading(f'{model_dirc}/tmp_cgs.dbl', u.K, shape=grid.shape, force=True)

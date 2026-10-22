@@ -798,19 +798,45 @@ def test_radmc_helper_star_IO():
 
 def test_radmc_helper_grid():
     grid = get_spherical_grid()
-    rmc_grid = fld.radmc_helper.Grid() # warns about empty args
+    rmc_grid = fld.radmc_helper.Grid()
     rmc_grid.setup_from(grid)
     assert np.allclose(rmc_grid.x1, grid.x1, rtol=1e-16)
     assert np.allclose(rmc_grid.x2, grid.x2, rtol=1e-16)
     assert np.allclose(rmc_grid.x3, grid.x3, rtol=1e-16)
 
+def test_radmc_helper_empty_grid_is_silent(capsys):
+    rmc_grid = fld.radmc_helper.Grid(dirc=test_dirc)
+    rmc_grid.setup_from(get_spherical_grid())
+    rmc_grid.write()
+    assert capsys.readouterr().out == ''
+
+def test_fail_radmc_helper_grid_missing_x3i():
+    grid = get_spherical_grid()
+    with pytest.raises(TypeError):
+        fld.radmc_helper.Grid(x1i=grid.x1i, x2i=grid.x2i, geometry='spherical')
+
+def test_fail_radmc_helper_grid_positional_arrays():
+    grid = get_spherical_grid()
+    with pytest.raises(TypeError, match='dirc and flnm must be strings'):
+        fld.radmc_helper.Grid(grid.x1i, grid.x2i)
+
+def test_fail_radmc_helper_write_empty_grid():
+    with pytest.raises(ValueError, match='empty radmc_helper.Grid'):
+        fld.radmc_helper.Grid(dirc=test_dirc).write()
+
+def test_fail_radmc_helper_write_cylindrical_grid():
+    rmc_grid = fld.radmc_helper.Grid(dirc=test_dirc)
+    rmc_grid.setup_from(get_cylindrical_grid())
+    with pytest.raises(ValueError, match='only supports spherical'):
+        rmc_grid.write()
+
 def test_radmc_helper_grid_IO():
     grid = get_spherical_grid()
-    rmc_grid = fld.radmc_helper.Grid(dirc=test_dirc) # warns about empty args
+    rmc_grid = fld.radmc_helper.Grid(dirc=test_dirc)
     rmc_grid.setup_from(grid)
     rmc_grid.write()
 
-    rmc_grid2 = fld.radmc_helper.Grid(dirc=test_dirc) # same warning
+    rmc_grid2 = fld.radmc_helper.Grid(dirc=test_dirc)
     rmc_grid2.read_from_file()
     assert np.allclose(rmc_grid2.x1, grid.x1, rtol=1e-16)
     assert np.allclose(rmc_grid2.x2, grid.x2, rtol=1e-16)
@@ -848,7 +874,7 @@ def test_radmc_helper_recover_data():
     wl = fld.radmc_helper.get_wavelength_array(Tstar=5772*u.K)
     rmc_star = fld.radmc_helper.Star(dirc=test_dirc)
     rmc_star.setup_from(get_basic_star(wl=wl))
-    rmc_grid = fld.radmc_helper.Grid(dirc=test_dirc) # empty args
+    rmc_grid = fld.radmc_helper.Grid(dirc=test_dirc)
     rmc_grid.setup_from(get_spherical_grid())
     rho = np.random.rand(*rmc_grid.active_shape) * u.g/u.cm**3
     tmp = np.random.rand(*rmc_grid.active_shape) * u.K
@@ -1036,6 +1062,81 @@ def test_fluid_IO_no_star():
     assert np.allclose(Gnew.tmp, Gas.tmp, rtol=1e-16)
 
 
+@pytest.mark.parametrize('name', ['kappaR', 'kappaP', 'kappaPstar'])
+@pytest.mark.parametrize('bad', [lambda f: 1.0, lambda f: 1.0 * u.cm**2])
+def test_fail_unitless_opacity(name, bad):
+    Gas = build_basic_fluid(irradiation='gray')
+    with pytest.raises(ValueError, match=f'enrolled {name} must return a Quantity'):
+        getattr(Gas, f'enroll_{name}')(bad)
+
+def test_opacity_compatible_units():
+    Gas = build_basic_fluid()
+    Gas.enroll_kappaR(lambda f: 0.1 * u.m**2/u.kg)
+    Gas.setup()
+    assert np.isclose(Gas.kappaR.to_value('cm2/g'), 1.0)
+
+def test_enroll_opacity_before_fields_are_set():
+    # can't be evaluated yet, so the unit check is skipped rather than failing
+    Gas = fld.fluids.Gas(grid=get_spherical_grid(), star=get_basic_star())
+    Gas.enroll_kappaR(lambda f: f.tmp.to_value('K') * u.cm**2/u.g)
+
+def test_fail_unitless_col0():
+    wl, kabs, ksca, g_asy = get_opacity_arrays()
+    star = get_basic_star(L=1, wl=wl)
+    grid = get_spherical_grid()
+    Dust = fld.fluids.Dust(grid=grid, star=star, irradiation='freqdep', kabs_wl=kabs, ksca_wl=ksca, g_wl=g_asy)
+    Dust.set_density(1e-10 * u.g/u.cm**3 * np.ones(grid.shape))
+    Dust.set_temperature(100 * u.K * np.ones(grid.shape))
+    with pytest.raises(ValueError, match='enrolled col0 must return a Quantity'):
+        Dust.enroll_col0(lambda f: 1.0)
+
+def eps_half(fluid): return 0.5
+
+def test_fluid_IO_warns_about_enrolled_getters(tmp_path, capsys):
+    Gas = build_basic_fluid()
+    Gas.enroll_alpha(lambda f: 1e-3)
+    Gas.enroll_effective_fraction(eps_half)
+    Gas.setup()
+    Gas.write_snapshot(dirc=str(tmp_path), name='gas')
+    capsys.readouterr()
+    Gnew = fld.fluids.create_from_snapshot(dirc=str(tmp_path), name='gas')
+    out = capsys.readouterr().out
+    for k in ['get_alpha', 'get_effective_fraction', 'get_kappaR', 'get_kappaP', 'get_kappaPstar']:
+        assert k in out
+    assert 'get_tau0' not in out
+    assert np.allclose(Gnew.eps, 0.5) # stored values survive, only the getters are lost
+
+def test_fluid_IO_no_enrolled_getters_is_silent(tmp_path, capsys):
+    Dust = build_freqdep_dust()
+    Dust.write_snapshot(dirc=str(tmp_path), name='dust')
+    capsys.readouterr()
+    fld.fluids.create_from_snapshot(dirc=str(tmp_path), name='dust')
+    assert 'enrolled' not in capsys.readouterr().out
+
+def test_fluid_IO_legacy_snapshot_warns_about_opacities(tmp_path, capsys):
+    Gas = build_basic_fluid()
+    Gas.enroll_alpha(lambda f: 1e-3)
+    Gas.setup()
+    Gas.write_snapshot(dirc=str(tmp_path), name='gas')
+    model_dirc = os.path.join(str(tmp_path), 'gas')
+    params = fld.tools.read_dictionary(model_dirc)
+    params.pop('_enrolled')
+    fld.tools.write_dictionary(params, dirc=model_dirc)
+    capsys.readouterr()
+    fld.fluids.create_from_snapshot(dirc=str(tmp_path), name='gas')
+    out = capsys.readouterr().out
+    assert 'get_kappaR' in out and 'get_alpha' not in out # alpha can't be recovered from old files
+
+def build_freqdep_dust():
+    wl, kabs, ksca, g_asy = get_opacity_arrays()
+    star = get_basic_star(L=1, wl=wl)
+    grid = get_spherical_grid()
+    Dust = fld.fluids.Dust(grid=grid, star=star, irradiation='freqdep', kabs_wl=kabs, ksca_wl=ksca, g_wl=g_asy)
+    Dust.set_density(1e-10 * u.g/u.cm**3 * np.ones(grid.shape))
+    Dust.set_temperature(100 * u.K * np.ones(grid.shape))
+    Dust.setup()
+    return Dust
+
 def test_freqdep_fluid_IO():
     wl, kabs, ksca, g_asy = get_opacity_arrays()
     # for a flat spectrum, the means should equal the input
@@ -1073,6 +1174,45 @@ def test_REnv_IO():
     assert np.allclose(Gnew.rho, Gas.rho, rtol=1e-16)
     assert np.allclose(Gnew.tmp, Gas.tmp, rtol=1e-16)
     assert np.isclose(Gnew.mu, Gas.mu, rtol=1e-16)
+
+def write_gas_dust_snapshot(dirc):
+    Gas, Dust = build_basic_fluid('gas'), build_basic_fluid('dust')
+    Gas.setup(); Dust.setup()
+    Renv = fld.FLD.RadiativeEnvironment([Gas, Dust], name='REnv')
+    Renv.write_snapshot(dirc=str(dirc), name='REnv')
+    return Renv, os.path.join(str(dirc), 'REnv')
+
+def test_REnv_IO_ignores_stale_fluid_dirs(tmp_path, capsys):
+    Renv, model_dirc = write_gas_dust_snapshot(tmp_path)
+    stale = Renv.fluids[0]
+    stale.tmp = 2 * stale.tmp # a different temperature, as from an older run
+    stale.write_snapshot(dirc=model_dirc, name='fluid-0')
+    Rnew = fld.FLD.create_from_snapshot(dirc=str(tmp_path), name='REnv')
+    assert [f.isGas for f in Rnew.fluids] == [True, False] # only the listed folders, in order
+    capsys.readouterr()
+    Renv.write_snapshot(dirc=str(tmp_path), name='REnv') # rewriting into the same folder warns
+    assert 'older snapshot' in capsys.readouterr().out
+
+def make_legacy(model_dirc):
+    params = fld.tools.read_dictionary(model_dirc)
+    params.pop('_fluid_dirs')
+    fld.tools.write_dictionary(params, dirc=model_dirc)
+
+def test_REnv_IO_legacy_snapshot_numeric_order(tmp_path):
+    _, model_dirc = write_gas_dust_snapshot(tmp_path)
+    make_legacy(model_dirc)
+    # alphabetically 'fluid-10' < 'fluid-9'; numerically 9 < 10
+    os.rename(os.path.join(model_dirc, 'fluid-000'), os.path.join(model_dirc, 'fluid-10'))
+    os.rename(os.path.join(model_dirc, 'fluid-001'), os.path.join(model_dirc, 'fluid-9'))
+    Rnew = fld.FLD.create_from_snapshot(dirc=str(tmp_path), name='REnv')
+    assert [f.isGas for f in Rnew.fluids] == [False, True]
+
+def test_fail_REnv_IO_ambiguous_legacy_snapshot(tmp_path):
+    Renv, model_dirc = write_gas_dust_snapshot(tmp_path)
+    make_legacy(model_dirc)
+    Renv.fluids[0].write_snapshot(dirc=model_dirc, name='fluid-0') # next to fluid-000
+    with pytest.raises(ValueError, match='ambiguous'):
+        fld.FLD.create_from_snapshot(dirc=str(tmp_path), name='REnv')
 
 def test_fail_scale_arrays():
     Gas = build_basic_fluid()
@@ -1117,6 +1257,17 @@ def test_implicit_viscosity_second_order():
         return (Disk.tmp - T0)[Disk.grid.active].to_value('K')
     diff = [np.abs(dT(True, dt) - dT(False, dt)).max() for dt in (2e-3, 1e-3)]
     assert 3 < diff[0] / diff[1] < 5
+
+def test_heating_units():
+    # Qirr and Qvisc must share the same units so they can be compared and added directly
+    Gas = build_basic_fluid('gas', irradiation='gray', viscosity=True)
+    Gas.enroll_alpha(lambda f: 1e-3)
+    Gas.setup()
+    Disk = fld.FLD.RadiativeEnvironment([Gas])
+    Disk.compute_Qirr()
+    Disk.compute_Qvisc()
+    assert Disk.Qirr.unit == u.Unit('erg/(s cm3)')
+    assert Disk.Qvisc.unit == Disk.Qirr.unit
 
 def test_irradiation_without_numexpr(monkeypatch):
     # the plain numpy path must give the same heating as the numexpr path

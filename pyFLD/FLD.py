@@ -4,6 +4,7 @@ from astropy import constants as const, units as u
 import copy
 from . import grid as gr, tools as tb, fluids as fl
 import glob
+import os
 
 try:
     import numexpr as ne
@@ -104,6 +105,7 @@ class RadiativeEnvironment(fl._GenericFluid):
 
         if self.implicit_viscosity:
             self._log_warning("Implicit viscosity is experimental and may be unstable/buggy. Use with caution.")
+            self._log_warning("Note that implicit viscosity fails when Δt > e/Q_visc.")
         self.configure_solver()
         self.prepare_grid()
         self.setup()
@@ -695,6 +697,11 @@ class RadiativeEnvironment(fl._GenericFluid):
             If grid geometry is not spherical or cylindrical
         ValueError
             If star object is not available
+
+        Returns
+        -------
+        new_dt : astropy.units.Quantity [s]
+            Suggested new timestep based on viscous heating: dt < e/Q_visc
         """
 
         self._push_region("compute_Qvisc")
@@ -719,7 +726,9 @@ class RadiativeEnvironment(fl._GenericFluid):
 
         self.Qvisc = Qvisc
 
+        new_dt = np.min((self.eng / self.Qvisc)[self.grid.active]).to('s')
         self._pop_region()
+        return new_dt
 
     def compute_Qirr(self):
         """
@@ -792,7 +801,7 @@ class RadiativeEnvironment(fl._GenericFluid):
             F = F_wl[0] * u.Lsun
 
         self.tau = tau
-        self.Qirr = F * self.geom # already expects units of erg/(s cm^3)
+        self.Qirr = (F * self.geom).to('erg/(s cm3)') # F [Lsun] * geom [1/au^3]
 
         self._pop_region()
     
@@ -837,7 +846,10 @@ class RadiativeEnvironment(fl._GenericFluid):
         self.refresh_fluids()
         
         if self.irradiation: self.compute_Qirr()
-        if self.viscosity: self.compute_Qvisc()
+        if self.viscosity:
+            dt_visc = self.compute_Qvisc()
+            if self.implicit_viscosity and dt_visc < dt:
+                raise ValueError(f"{self.get_prefix()}: implicit viscosity requires dt < {dt_visc.to('yr'):.3e} to avoid negative energy update")
         self._build_matrix(dt=dt)
 
         Enew = self._solve_system(recompute_preconditioner=recompute_preconditioner, **ilu_kwargs)
@@ -904,14 +916,24 @@ class RadiativeEnvironment(fl._GenericFluid):
                 'solve_x1', 'solve_x2', 'solve_x3', '_precondition', # flags
                 'irradiation']
 
+        # record which fluid folders belong to this snapshot, so that
+        # create_from_snapshot ignores leftovers from older snapshots
+        self._fluid_dirs = [f'fluid-{i:03d}' for i in range(len(self.fluids))]
+        stale = sorted(set(os.path.basename(os.path.normpath(d))
+                           for d in glob.glob(f'{model_dirc}/fluid-*')) - set(self._fluid_dirs))
+        if stale:
+            self._log_warning(f"{model_dirc} also contains {stale} from an older snapshot; "
+                              "they will be ignored when reading")
+
         tb.extract_and_store_params(self, dirc=model_dirc,
                                     skipped_keys=skipped_keys)
-        
+
         # maybe we can avoid writing grid and star
         self.grid.write_snapshot(dirc=model_dirc, name='grid')
-        self.star.write_snapshot(dirc=model_dirc, name='star')
-        for i, f in enumerate(self.fluids):
-            f.write_snapshot(dirc=model_dirc, name=f'fluid-{i:03d}')
+        if self.star is not None:
+            self.star.write_snapshot(dirc=model_dirc, name='star')
+        for fluid_dir, f in zip(self._fluid_dirs, self.fluids):
+            f.write_snapshot(dirc=model_dirc, name=fluid_dir)
 
         self._pop_region()
 
@@ -930,18 +952,21 @@ class RadiativeEnvironment(fl._GenericFluid):
 
 
 def create_from_snapshot(dirc='./', name='REnv'):
-    # bruteforce the entire thing for now
-    # I'll assume that everything starting with "fluid" is part of the fluids
-
     model_dirc = f'{dirc}/{name}/'
 
-    dircs = glob.glob(f'{model_dirc}/fluid-*')
-    names = sorted([d.strip().split('/')[-1] for d in dircs])
+    params = tb.read_dictionary(model_dirc)
+    if '_fluid_dirs' in params: # the snapshot lists its own fluid folders
+        fluid_dirs = params['_fluid_dirs']
+    else: # older snapshots: discover the folders, in numeric order
+        found = [os.path.basename(os.path.normpath(d)) for d in glob.glob(f'{model_dirc}/fluid-*')]
+        index = [int(n.split('-', 1)[1]) for n in found]
+        if len(set(index)) != len(index): # e.g. fluid-0 next to fluid-000
+            raise ValueError(f"{model_dirc}: ambiguous fluid folders {sorted(found)}; "
+                             "remove the ones from older snapshots")
+        fluid_dirs = [n for _, n in sorted(zip(index, found))]
 
-    fluids = []
-    for name in names:
-        fluids.append(fl.create_from_snapshot(dirc=model_dirc, name=name))
-    
+    fluids = [fl.create_from_snapshot(dirc=model_dirc, name=d) for d in fluid_dirs]
+
     REnv = RadiativeEnvironment(fluids=fluids)
     tb.read_and_assign_params(REnv, dirc=model_dirc)
     REnv._rebuild_after_read()

@@ -466,7 +466,7 @@ def get_tau0_Flock_2019(fluid):
         Optical depth at innermost part of domain (φ, θ, ibeg)
     """
     g, s = fluid.grid, fluid.star
-    return (fluid.rho_eff * fluid.kappaPstar * (g.R-3*s.R))[:, :, g.ibeg]
+    return (fluid.rho_eff * fluid.kappaPstar * (g.R-3*s.R))[:, :, g.ibeg].to('')
 
 def get_col0_Flock_2019(fluid):
     """
@@ -486,27 +486,44 @@ def get_col0_Flock_2019(fluid):
         Fluid column at innermost part of domain (φ, θ, ibeg)
     """
     g, s = fluid.grid, fluid.star
-    return (fluid.rho_eff * (g.R-3*s.R))[:, :, g.ibeg]
+    return (fluid.rho_eff * (g.R-3*s.R))[:, :, g.ibeg].to('g/cm2')
 
-def get_fraction_Isella_Natta_2005(fluid):
+def get_fraction_Isella_Natta_2005(fluid, gas=None):
     """
     Compute dust sublimation fraction following Isella & Natta (2005).
 
     Calculates the effective dust fraction accounting for sublimation at
     high temperatures using a smooth transition function. The sublimation
-    temperature depends on dust density via T_subl = 2000 * ρ^0.0195 K.
+    temperature depends on gas density via T_subl = 2000 * ρ_gas^0.0195 K.
 
     Arguments
     ----------
     fluid : GenericFluid or higher class
         Fluid object with temperature and density fields. Ideally Dust.
+    gas : GenericFluid or higher class, optional
+        Gas object with a density field. If not provided, the density of
+        `fluid` is used instead, assuming it's the gas component.
 
     Returns
     -------
     ndarray
         Dust sublimation fraction (0 to 1) across the domain
+
+    Examples
+    --------
+    Pass the gas through a wrapper, since enrolled functions only receive the fluid:
+
+    >>> Dust.enroll_effective_fraction(lambda d: fld.tools.get_fraction_Isella_Natta_2005(d, gas=Gas))
+
+    Enrolled functions are not stored in snapshots. After reading one back,
+    re-enroll with the reloaded gas:
+
+    >>> R = fld.FLD.create_from_snapshot(dirc='./', name='model')
+    >>> Gas, Dust = R.fluids
+    >>> Dust.enroll_effective_fraction(lambda d: fld.tools.get_fraction_Isella_Natta_2005(d, gas=Gas))
     """
-    T_subl = 2000.0 * fluid.rho.to_value('g/cm3') ** 0.0195
+    gas_fluid = gas if gas is not None else fluid
+    T_subl = 2000.0 * gas_fluid.rho.to_value('g/cm3') ** 0.0195
     T      = fluid.tmp.to_value('K')
     fmin   = 1e-10
     f      = fmin + (1-fmin) * 0.5 * (1 + np.tanh(-(T-T_subl)/100))

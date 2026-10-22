@@ -4,7 +4,7 @@ build-backend = 'mesonpy'
 
 [project]
 name = 'pyFLD'
-version = '0.4.3'
+version = '0.4.4'
 description = 'Radiative transfer with the flux-limited diffusion approximation in astrophysical simulations.'
 readme = { file = 'README.md', content-type = 'text/markdown' }
 keywords = [

@@ -290,12 +290,13 @@ class Grid(gr.Grid):
 
     >>> ri = np.logspace(0, 3, 100)*u.au   # 100 radial cells
     >>> thi = np.linspace(0, np.pi, 50)     # 50 polar cells
-    >>> rmc_grid = radmc_helper.Grid(x1i=ri, x2i=thi, geometry='spherical')
+    >>> phii = np.array([0, 2*np.pi])      # axisymmetric
+    >>> rmc_grid = radmc_helper.Grid(x1i=ri, x2i=thi, x3i=phii, geometry='spherical')
     >>> rmc_grid.write('amr_grid.inp')
 
     Load from an existing file:
 
-    >>> rmc_grid = radmc_helper.Grid() # will raise a warning
+    >>> rmc_grid = radmc_helper.Grid()
     >>> rmc_grid.read_from_file('amr_grid.inp')
     >>> print(f"Nr={rmc_grid.NX1}, Ntheta={rmc_grid.NX2}")
 
@@ -308,11 +309,13 @@ class Grid(gr.Grid):
 
     def __init__(self, dirc='./', flnm='amr_grid.inp', **super_kwargs):
 
+        if not isinstance(dirc, str) or not isinstance(flnm, str):
+            raise TypeError("dirc and flnm must be strings; pass grid interfaces as keywords "
+                            "(x1i=, x2i=, x3i=, geometry='spherical') or use setup_from() / read_from_file()")
         self.dirc = dirc
         self.flnm = f'{dirc}/{flnm}'
-        try: super().__init__(**super_kwargs)
-        except TypeError: # if super_kwargs is empty, leave an empty class
-            dbg.format_warning(msg='No grid parameters provided. Created an empty Grid object. Use setup_from() or read_from_file() to set up the grid.')
+        # without grid parameters this is an empty container, filled by setup_from() or read_from_file()
+        if super_kwargs: super().__init__(**super_kwargs)
 
     def setup_from(self, grid: gr.Grid):
         """
@@ -375,6 +378,11 @@ class Grid(gr.Grid):
         >>> rmc_grid = radmc_helper.Grid(x1i=ri, x2i=thi, x3i=phii, geometry='spherical')
         >>> rmc_grid.write('amr_grid.inp')
         """
+
+        if not hasattr(self, 'x1i'):
+            raise ValueError("empty radmc_helper.Grid: call setup_from(grid) or read_from_file() first")
+        if self.geometry not in gr.aux_spherical:
+            raise ValueError(f"RADMC3D export only supports spherical grids, got geometry='{self.geometry}'")
 
         ri_cm = self.x1i[self.act1i].to_value('cm')
         thi   = 1 * self.x2i[self.act2i]
@@ -850,9 +858,8 @@ def write_flat_opacities(wl, kabs, dirc='./', flnm='dustkappa_flat.inp'):
     """
     Write dust opacity file in RADMC3D format.
 
-    Outputs a wavelength-dependent dust opacity to dustkappa_*.inp in
-    RADMC3D format. Includes absorption and scattering opacities (scattering
-    set to zero, phase function albedo to zero).
+    Outputs a fixed, non-wavelength-dependent dust opacity to dustkappa_*.inp in
+    RADMC3D format. Scattering opacities and asymmetry factors are set to zero.
 
     .. note::
 
@@ -872,10 +879,9 @@ def write_flat_opacities(wl, kabs, dirc='./', flnm='dustkappa_flat.inp'):
     wl : array_like [cm] or astropy.units.Quantity
         Wavelength array. Can be astropy quantity with any length unit, or
         numpy array (interpreted as cm if plain array). Output will be in um.
-    kabs : array_like [cm2/g] or astropy.units.Quantity
+    kabs : float [cm2/g] or astropy.units.Quantity
         Absorption opacity (mass absorption coefficient). Can be astropy
-        quantity or numpy array (interpreted as cm2/g if plain array).
-        Must have same shape as wl. Scattering and albedo set to zero.
+        quantity or float (interpreted as cm2/g if float).
     dirc : str, optional
         Output directory. Default is ``'./'``.
     flnm : str, optional
@@ -896,14 +902,13 @@ def write_flat_opacities(wl, kabs, dirc='./', flnm='dustkappa_flat.inp'):
 
     Examples
     --------
-    >>> # Wavelength-dependent absorption (e.g., silicate)
     >>> wl = np.logspace(-1, 4, 100)*u.um
-    >>> kabs = 1e-3 * u.cm**2/u.g * np.exp(-((wl.to_value('um') - 10)/5)**2)
-    >>> write_flat_opacities(wl, kabs, dirc='./', flnm='dustkappa_silicate.inp')
+    >>> kabs = 1e-3 * u.cm**2/u.g
+    >>> write_flat_opacities(wl, kabs)
 
-    >>> # Constant opacity
-    >>> kabs_const = np.ones_like(wl) * 1e-2 * u.cm**2/u.g
-    >>> write_flat_opacities(wl, kabs_const, dirc='./')
+    >>> # Using plain array (interpreted as cm and cm2/g)
+    >>> write_flat_opacities(np.array([1, 2, 10]), 1e-3)
+
     """
 
     wl_um = tb.toQuantity(wl, u.cm).to_value('um')
@@ -930,10 +935,10 @@ def read_and_format_radmc_data(dirc='./'):
     Returns
     -------
     rho : astropy.units.Quantity
-        Dust volume density array with shape (Nr_species, Nr, Ntheta, Nphi)
+        Dust volume density array with shape (Nr_species, Nphi, Ntheta, Nr)
         Units: [g/cm3].
     tmp : astropy.units.Quantity
-        Dust temperature array with shape (Nr_species, Nr, Ntheta, Nphi)
+        Dust temperature array with shape (Nr_species, Nphi, Ntheta, Nr)
         Units: [K].
 
     Requires
@@ -949,7 +954,7 @@ def read_and_format_radmc_data(dirc='./'):
     Notes
     -----
     - Expected files in directory: amr_grid.inp, dust_density.binp, dust_temperature.bdat
-    - Array axis order transposed to (Nr_species, Nr, Ntheta, Nphi)
+    - Array axis order transposed to (Nr_species, Nphi, Ntheta, Nr)
     - Current working directory temporarily changed during file read, then restored
     - Requires successful RADMC3D mctherm run
 
@@ -957,7 +962,7 @@ def read_and_format_radmc_data(dirc='./'):
     --------
     >>> # After RADMC3D mctherm run
     >>> rho, tmp = read_and_format_radmc_data(dirc='./radmc_output/')
-    >>> print(f"Density shape: {rho.shape}")  # (Nr_species, Nr, Ntheta, Nphi)
+    >>> print(f"Density shape: {rho.shape}")  # (Nr_species, Nphi, Ntheta, Nr)
     >>> print(f"Temperature range: {tmp.min():.1f} to {tmp.max():.1f}")
     >>> print(f"Density units: {rho.unit}")
     """

@@ -17,7 +17,7 @@ The ``fld.tools`` module contains utility functions that are not specific to any
 
 - ``get_tau0_Flock_2019(fluid)``: Returns the gray optical depth between the stellar surface and the inner radial boundary of the grid, following the prescription of Flock et al. (2019). Intended to be passed to ``fluid.enroll_tau0``.
 - ``get_col0_Flock_2019(fluid)``: Similar, but returns the column density for frequency-dependent irradiation. Intended to be passed to ``fluid.enroll_col0``.
-- ``get_fraction_Isella_Natta_2005(fluid)``: Returns a dust sublimation fraction following Isella & Natta (2005), useful for modeling the dust sublimation front near the star. Intended to be passed to ``fluid.enroll_effective_fraction``.
+- ``get_fraction_Isella_Natta_2005(fluid, gas=None)``: Returns a dust sublimation fraction following Isella & Natta (2005), useful for modeling the dust sublimation front near the star. Intended to be passed to ``fluid.enroll_effective_fraction``. The sublimation temperature depends on the gas density, so pass the gas through a wrapper, e.g. ``Dust.enroll_effective_fraction(lambda d: fld.tools.get_fraction_Isella_Natta_2005(d, gas=Gas))`` (see example 8). Without ``gas``, the dust density is used and the sublimation temperature is somewhat underestimated. Like all enrolled functions, it is not stored in snapshots and must be re-enrolled, with the reloaded gas, after ``create_from_snapshot``.
 - ``get_alpha_Cecil_Flock_2024(fluid)``: Returns a spatially varying turbulent viscosity parameter :math:`\alpha` profile following Cecil & Flock (2024). Intended to be passed to ``fluid.enroll_alpha``.
 
 **Miscellaneous:**
