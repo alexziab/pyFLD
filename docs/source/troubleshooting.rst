@@ -11,7 +11,7 @@ Solver & Convergence
 A: Choose the preconditioner by grid size and dimension. In tests on 2D and 3D disk models (16k–1.3M cells):
 
 - **1D and small 2D grids**: the default ``ilu`` works well.
-- **Large 2D (≳ 10⁵ cells) and all 3D grids**: ``amg`` (algebraic multigrid, requires ``pip install pyamg``). Its iteration count does not grow with resolution: it was 1.4–1.7× faster than ``ilu`` on 2D grids of 0.26–1M cells, and 2–30× faster than any other option in 3D.
+- **Large 2D (≳ 10⁵ cells) and all 3D grids**: ``amg`` (algebraic multigrid, requires ``pip install pyamg``). Its iteration count does not grow with resolution: it was 1.4–1.7× faster than ``ilu`` on 2D grids of 0.26–1M cells, and 1.8–30× faster than any other option in 3D.
 - **3D without** ``pyamg``: ``jacobi``. The ILU factorization is expensive in 3D (see the next question). Note that Jacobi needs hundreds to thousands of iterations, and at the same ``rtol`` its solution can be noticeably less accurate, because ``rtol`` limits the residual, not the error.
 - The ``rescaled`` variants made no measurable difference in these tests.
 - ``none`` (direct solver) is only practical for small problems: in 3D it was already slower than every iterative option at 350k cells, and its memory use grows quickly.
@@ -158,7 +158,7 @@ Memory & Performance
 
 **Q: Out of memory with large grids**
 
-A: In tests, the ``ilu``, ``amg`` and ``jacobi`` preconditioners used similar memory (within ~10%); most of it goes to the fields stored per cell. With frequency-dependent irradiation, the optical depth is stored per wavelength bin, so memory grows with the number of bins (a 3D disk with 5.3M cells and ~100 bins would need ~27 GB). Solutions:
+A: In tests, the ``ilu``, ``amg`` and ``jacobi`` preconditioners used similar memory on large grids (within ~20%; ``amg`` used up to ~1.5× more on small grids); most of it goes to the fields stored per cell. With frequency-dependent irradiation, the optical depth is stored per wavelength bin, so memory grows with the number of bins (a 3D disk with 5.3M cells and 60 bins would need ~20 GB). Solutions:
 
 1. Use fewer wavelength bins for frequency-dependent irradiation
 
