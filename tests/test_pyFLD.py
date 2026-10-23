@@ -250,6 +250,89 @@ def test_radiative_line_switch_preconditioner():
     Box.preconditioner = 'jacobi'
     Box.advance(dt=1e10 * u.s, recompute_preconditioner=False)
     assert Box._Mat_kind == 'jacobi'
+def test_radiative_line_switch_to_direct_solver():
+    Box = prep_test_radiative_line()
+    Box.preconditioner = 'none'
+    Box.advance(dt=1e10 * u.s)
+    assert Box.iters == -1 # direct solve
+def test_radiative_line_switch_from_direct_solver():
+    # previously the direct solver kept being used after switching away from 'none'
+    Box = prep_test_radiative_line(preconditioner='none')
+    Box.preconditioner = 'jacobi'
+    Box.advance(dt=1e10 * u.s)
+    assert Box.iters != -1
+    assert Box._Mat_kind == 'jacobi'
+
+def build_3D_environment(preconditioner='ilu', verbose=False):
+    grid = get_spherical_grid(nphi=5) # at least 5 cells in every direction
+    Gas = fld.fluids.Gas(grid=grid, star=get_basic_star())
+    Gas.set_density(1e-10 * u.g/u.cm**3 * np.ones(grid.shape))
+    Gas.set_temperature(100 * u.K * np.ones(grid.shape))
+    Gas.enroll_kappaR(lambda f: 1.0 * u.cm**2/u.g)
+    Gas.enroll_kappaP(lambda f: 1.0 * u.cm**2/u.g)
+    Gas.setup()
+    return fld.FLD.RadiativeEnvironment([Gas], preconditioner=preconditioner, verbose=verbose)
+
+def test_ilu_options_depend_on_dimension():
+    Box = prep_test_radiative_line() # 100 x 2 x 2: not 3D
+    assert Box._ilu_options() == dict(drop_tol=1e-4, fill_factor=10)
+    assert build_3D_environment()._ilu_options() == dict(drop_tol=0.1, fill_factor=3)
+
+def test_ilu_options_from_configure_solver(monkeypatch):
+    Disk = build_3D_environment()
+    Disk.configure_solver(drop_tol=1e-3) # fill_factor keeps its 3D default
+    assert Disk._ilu_options() == dict(drop_tol=1e-3, fill_factor=3)
+    # and they reach spilu
+    seen = {}
+    real_spilu = fld.FLD.sp.linalg.spilu
+    def spy(A, **kwargs):
+        seen.update(kwargs); return real_spilu(A, **kwargs)
+    monkeypatch.setattr(fld.FLD.sp.linalg, 'spilu', spy)
+    Box = prep_test_radiative_line()
+    Box.configure_solver(rtol=1e-10, drop_tol=1e-2, fill_factor=5)
+    Box.advance(dt=1e10 * u.s)
+    assert seen == dict(drop_tol=1e-2, fill_factor=5)
+
+def test_ilu_options_from_older_snapshot():
+    # snapshots written before configure_solver had ILU options lack these keys
+    Disk = build_3D_environment()
+    Disk.solver_settings = dict(solver='bicgstab', rtol=1e-8, maxiter=10000, guess=True)
+    assert Disk._ilu_options() == dict(drop_tol=0.1, fill_factor=3)
+
+def test_fail_ilu_options_in_advance():
+    Box = prep_test_radiative_line()
+    with pytest.raises(TypeError):
+        Box.advance(dt=1e10 * u.s, drop_tol=1e-2) # now set with configure_solver()
+
+def test_verbose_preconditioner_info(capsys):
+    capsys.readouterr()
+    build_3D_environment(preconditioner='ilu', verbose=True)
+    out = capsys.readouterr().out
+    assert "preconditioner='amg'" in out
+    assert "3D grid: ILU uses drop_tol=0.1, fill_factor=3" in out
+    build_3D_environment(preconditioner='jacobi', verbose=True)
+    out = capsys.readouterr().out
+    assert "preconditioner='amg'" in out and "ILU uses" not in out
+    build_3D_environment(preconditioner='ilu', verbose=False)
+    assert capsys.readouterr().out == ''
+
+def test_verbose_no_amg_hint_when_using_amg(capsys):
+    pytest.importorskip('pyamg')
+    capsys.readouterr()
+    build_3D_environment(preconditioner='amg', verbose=True)
+    out = capsys.readouterr().out
+    assert "preconditioner='amg'" not in out and "ILU uses" not in out
+
+def test_debug_depth_survives_exceptions():
+    import pyFLD.debug_state as dbg
+    depth = dbg.depth()
+    Gas = build_basic_fluid()
+    Gas.setup()
+    Disk = fld.FLD.RadiativeEnvironment([Gas])
+    for _ in range(3):
+        with pytest.raises(ValueError): # boundaries not declared
+            Disk.advance(dt=1 * u.yr)
+    assert dbg.depth() == depth
 
 def test_radiative_line_wrong_boundary_length():
     with pytest.raises(ValueError):
@@ -266,6 +349,98 @@ def test_radiative_line_unknown_preconditioner():
 def test_radiative_line_no_preconditioner():
     with pytest.raises(ValueError):
         prep_test_radiative_line(preconditioner=False)
+
+def test_radiative_line_amg():
+    pytest.importorskip('pyamg')
+    prep_test_radiative_line(preconditioner='amg')
+def test_radiative_line_amg_reuse_preconditioner():
+    pytest.importorskip('pyamg')
+    Box = prep_test_radiative_line(preconditioner='amg', recompute_preconditioner=False)
+    assert Box._Mat_kind == 'amg'
+
+def run_gray_disk(preconditioner, nsteps=3):
+    Gas = build_basic_fluid(irradiation='gray')
+    Gas.enroll_tau0(fld.tools.get_tau0_Flock_2019)
+    Gas.setup()
+    Disk = fld.FLD.RadiativeEnvironment([Gas], preconditioner=preconditioner)
+    bounds = [fld.grid.BOUNDARY_FIXEDVALUE] * 6
+    vals = [fld.tools.T_to_Er(10*u.K)] * 6
+    bounds[3] = fld.grid.BOUNDARY_REFLECTIVE # midplane of the half disk
+    bounds[4] = bounds[5] = fld.grid.BOUNDARY_REFLECTIVE # phi
+    Disk.declare_boundaries(bounds, vals)
+    for _ in range(nsteps): Disk.advance(dt=1e10 * u.yr)
+    return Disk
+
+def test_amg_matches_ilu():
+    pytest.importorskip('pyamg')
+    T_ilu = run_gray_disk('ilu').tmp.to_value('K')
+    T_amg = run_gray_disk('amg').tmp.to_value('K')
+    assert np.allclose(T_amg, T_ilu, rtol=1e-5, atol=0)
+
+def block_pyamg(monkeypatch):
+    # make "import pyamg" fail, as if it were not installed
+    import builtins
+    real_import = builtins.__import__
+    def no_pyamg(name, *args, **kwargs):
+        if name == 'pyamg': raise ImportError("No module named 'pyamg'")
+        return real_import(name, *args, **kwargs)
+    monkeypatch.setattr(builtins, '__import__', no_pyamg)
+
+def test_fail_amg_without_pyamg(monkeypatch):
+    block_pyamg(monkeypatch)
+    Gas = build_basic_fluid()
+    Gas.setup()
+    with pytest.raises(ImportError, match='requires pyamg'):
+        fld.FLD.RadiativeEnvironment([Gas], preconditioner='amg')
+
+def test_fail_switch_to_amg_without_pyamg(monkeypatch):
+    Box = prep_test_radiative_line()
+    block_pyamg(monkeypatch)
+    Box.preconditioner = 'amg' # bypasses the check in __init__
+    with pytest.raises(ImportError, match='requires pyamg'):
+        Box.advance(dt=1e10 * u.s)
+
+def test_REnv_IO_amg_snapshot_without_pyamg(tmp_path, capsys, monkeypatch):
+    Gas = build_basic_fluid()
+    Gas.setup()
+    Disk = fld.FLD.RadiativeEnvironment([Gas], name='REnv')
+    Disk.preconditioner = 'amg' # as if written on a machine with pyamg
+    bounds = [fld.grid.BOUNDARY_FIXEDVALUE] * 2 + [fld.grid.BOUNDARY_REFLECTIVE] * 4
+    Disk.declare_boundaries(bounds, [fld.tools.T_to_Er(100*u.K)] * 2 + [0] * 4)
+    Disk.write_snapshot(dirc=str(tmp_path), name='REnv')
+
+    block_pyamg(monkeypatch)
+    capsys.readouterr()
+    Rnew = fld.FLD.create_from_snapshot(dirc=str(tmp_path), name='REnv')
+    assert "falling back to 'ilu'" in capsys.readouterr().out
+    assert Rnew.preconditioner == 'ilu'
+    for f in Rnew.fluids: # enrolled functions are not stored
+        f.enroll_kappaR(lambda f: 1.0 * u.cm**2/u.g)
+        f.enroll_kappaP(lambda f: 1.0 * u.cm**2/u.g)
+        f.enroll_kappaPstar(lambda f: 1.0 * u.cm**2/u.g)
+    Rnew.refresh_fluids()
+    Rnew.advance(dt=1 * u.yr)
+    assert Rnew._Mat_kind == 'ilu'
+
+def build_large_cartesian_environment(nx, ny):
+    xi = fld.grid.get_domain_with_ghosts(0, 1, Nx=nx) * u.cm
+    yi = fld.grid.get_domain_with_ghosts(0, 1, Nx=ny) * u.cm
+    zi = fld.grid.get_domain_with_ghosts(0, 1, Nx=1) * u.cm
+    grid = fld.grid.Grid(xi, yi, zi, geometry='cartesian')
+    Gas = fld.fluids.Gas(grid=grid)
+    Gas.set_density(1 * u.g/u.cm**3 * np.ones(grid.shape))
+    Gas.set_temperature(10 * u.K * np.ones(grid.shape))
+    Gas.enroll_kappaR(lambda f: 1 * u.cm**2/u.g)
+    Gas.enroll_kappaP(lambda f: 1 * u.cm**2/u.g)
+    Gas.setup()
+    return fld.FLD.RadiativeEnvironment([Gas], verbose=True)
+
+def test_verbose_amg_hint_only_for_multidimensional_grids(capsys):
+    capsys.readouterr()
+    build_large_cartesian_environment(100000, 1) # 1D: ILU is exact for a tridiagonal matrix
+    assert "preconditioner='amg'" not in capsys.readouterr().out
+    build_large_cartesian_environment(400, 250) # 2D, 1e5 cells
+    assert "preconditioner='amg'" in capsys.readouterr().out
 
 def test_radiative_line_preconditioner_alert():
     # still works, just throws a warning about the rescaling
@@ -1161,6 +1336,26 @@ def test_freqdep_fluid_IO():
     assert np.allclose(Dnew.kabs_wl, Dust.kabs_wl, rtol=1e-16)
     assert np.allclose(Dnew.ksca_wl, Dust.ksca_wl, rtol=1e-16)
     assert np.allclose(Dnew.g_wl, Dust.g_wl, rtol=1e-16)
+
+def test_REnv_IO_restart_direct_solver(tmp_path):
+    # restarting a model that used the direct solver raised "Unknown preconditioner type: none"
+    Gas = build_basic_fluid()
+    Gas.setup()
+    Disk = fld.FLD.RadiativeEnvironment([Gas], name='REnv', preconditioner='none')
+    bounds = [fld.grid.BOUNDARY_FIXEDVALUE] * 2 + [fld.grid.BOUNDARY_REFLECTIVE] * 4
+    Disk.declare_boundaries(bounds, [fld.tools.T_to_Er(100*u.K)] * 2 + [0] * 4)
+    Disk.advance(dt=1 * u.yr)
+    Disk.write_snapshot(dirc=str(tmp_path), name='REnv')
+
+    Rnew = fld.FLD.create_from_snapshot(dirc=str(tmp_path), name='REnv')
+    for f in Rnew.fluids: # enrolled functions are not stored
+        f.enroll_kappaR(lambda f: 1.0 * u.cm**2/u.g)
+        f.enroll_kappaP(lambda f: 1.0 * u.cm**2/u.g)
+        f.enroll_kappaPstar(lambda f: 1.0 * u.cm**2/u.g)
+    Rnew.refresh_fluids()
+    assert Rnew.preconditioner == 'none'
+    Rnew.advance(dt=1 * u.yr)
+    assert Rnew.iters == -1
 
 def test_REnv_IO():
     Gas = build_basic_fluid()

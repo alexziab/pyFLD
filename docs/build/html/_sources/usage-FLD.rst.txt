@@ -69,7 +69,8 @@ which advances the radiation field and temperature by a time step of 1 year. The
 
 - ``uf``: an under-relaxation factor between 0 and 1 for the temperature update (default 0, i.e. full update). With ``uf=0.5``, the new temperature is the average of the old one and the solution of the step.
 - ``recompute_preconditioner``: whether to rebuild the preconditioner before solving (default ``True``). Building the ILU preconditioner can be expensive, so if the system changes little between steps it can be worth setting this to ``False``. The previous preconditioner is then reused when available, and a new one is computed otherwise (e.g., on the first call, or after changing ``preconditioner``).
-- any further keyword arguments are passed to ``scipy.sparse.linalg.spilu`` when building the ILU preconditioner, e.g. ``drop_tol`` or ``fill_factor``.
+
+Options for the ILU factorization (``drop_tol``, ``fill_factor``) are set with ``configure_solver`` (see below), not passed to ``advance()``.
 
 If the linear solver fails, ``advance()`` raises a ``RuntimeError`` and leaves the temperature and radiation field unchanged, so that a loop can catch the error and retry, e.g. with a smaller time step.
 
@@ -110,16 +111,20 @@ Additional control over the solver can be achieved with the ``Disk.configure_sol
 
 .. code-block:: python
 
-    Disk.configure_solver(solver='bicgstab', rtol=1e-8, maxiter=10000, guess=True)
+    Disk.configure_solver(solver='bicgstab', rtol=1e-8, maxiter=10000, guess=True,
+                          drop_tol=None, fill_factor=None)
 
 - ``solver``: the name of the iterative sparse matrix solver used. Options are ``bicgstab`` (default), ``gmres``, ``cg``, ``cgs``, ``lgmres``, ``minres``, and ``qmr``, but note that the module has only really been tested with ``bicgstab``. For a direct solver, set ``preconditioner='none'`` instead (see below).
 - ``rtol``: the relative tolerance for the iterative solver (default is :math:`10^{-8}`).
 - ``maxiter``: the maximum number of iterations for the iterative solver (default is 10000).
 - ``guess``: if ``True``, passes the current radiation energy density as an initial guess, which can be useful for speeding up convergence when performing multiple calls to ``advance`` in a time-dependent simulation. Otherwise, the solver starts with a zero-valued initial guess (default is ``True``).
+- ``drop_tol``, ``fill_factor``: passed to ``scipy.sparse.linalg.spilu`` for the ``ilu`` and ``rescaled ilu`` preconditioners, and ignored by the others. If ``None`` (default), they depend on the grid: ``drop_tol=0.1, fill_factor=3`` for 3D grids (at least 5 cells in every direction), where they were 2–8× faster than the ``spilu`` defaults in tests, and the ``spilu`` defaults (``drop_tol=1e-4, fill_factor=10``) otherwise. See :doc:`troubleshooting` before changing them: settings that are fast in 3D often fail to converge in 2D. New values take effect when the preconditioner is next rebuilt; with ``advance(recompute_preconditioner=False)`` the old factorization keeps being reused.
 
 Each call to ``configure_solver`` resets all arguments that are not passed to their default values, so pass all the settings you want to change in a single call.
 
 Regarding the ``preconditioner`` argument in the class initializer: the default ``ilu`` option applies an incomplete LU factorization to the sparse matrix, which can significantly speed up convergence for large problems. However, for very large problems, the factorization itself can be computationally expensive and may even fail due to memory constraints; if it fails, ``pyFLD`` falls back to Jacobi preconditioning with a warning. In such cases, it may be better to set the preconditioner to ``jacobi`` (i.e., diagonal scaling) from the start.
+
+For large grids, ``preconditioner='amg'`` uses classical algebraic multigrid (Ruge-Stüben, from the optional package ``pyamg``: ``pip install pyamg`` or ``pip install .[amg]``). Its iteration count stays roughly constant as the grid is refined, whereas ILU needs more iterations and a more expensive factorization. On a 2D dusty disk at dt = 1e10 yr, both took the same time at 65k cells, while AMG was 1.4× faster at 262k cells and 1.7× faster at 1M cells, with similar memory use. Each AMG iteration costs more than an ILU iteration, so ILU remains the better choice for small grids. Jacobi needed hundreds to thousands of iterations per step on the same problem.
 
 In addition to the above preconditioners, the class supports "rescaled" variants of the default preconditioners, where the sparse matrix is rescaled by the inverse of its diagonal before applying the preconditioner. This is a typically cheap operation that can speed up convergence for some problems. To use the rescaled variants, simply set ``preconditioner`` to ``rescaled ilu`` or ``rescaled jacobi``. Finally, ``preconditioner='none'`` skips the iterative solver altogether and uses the direct solver ``scipy.sparse.linalg.spsolve``, which is robust but only practical for small problems.
 

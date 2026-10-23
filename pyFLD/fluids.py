@@ -42,6 +42,12 @@ class _GenericFluid:
     _initialized_temperature = False
     _initialized = False
 
+    def __init_subclass__(cls, **kwargs):
+        # restore the debug depth when a method with a debug region exits, also through an
+        # exception or early return, in every subclass (Gas, Dust, RadiativeEnvironment, ...)
+        super().__init_subclass__(**kwargs)
+        dbg.keep_depth_in(cls)
+
     def __init__(self, grid=None, star=None, name=None,
                  mu=2.353, gamma=1.4, verbose=True, debug=False):
 
@@ -85,6 +91,11 @@ class _GenericFluid:
         """Format and log warning message."""
         prefix = self.get_prefix()
         dbg.format_warning(prefix, msg, dbg.depth())
+
+    def _log_info(self, msg):
+        """Format and log an informational message (not a warning)."""
+        prefix = self.get_prefix()
+        dbg.format_info(prefix, msg, dbg.depth())
 
     def _push_region(self, name):
         """Enter a named debug region, increment depth, and log entry."""
@@ -417,6 +428,8 @@ class _GenericFluid:
         self.update_effective_density() # new rho, same eps
         self.update_pressure_energy()
         self._pop_region()
+
+dbg.keep_depth_in(_GenericFluid) # __init_subclass__ only covers the subclasses
 
 class _RadiativeFluid(_GenericFluid):
     """

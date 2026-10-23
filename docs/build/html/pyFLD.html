@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pyFLD package &mdash; pyFLD 0.4.4 documentation</title>
+  <title>pyFLD package &mdash; pyFLD 0.5.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -63,7 +63,10 @@
 <li class="toctree-l3"><a class="reference internal" href="#module-pyFLD.debug_state">pyFLD.debug_state module</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#pyFLD.debug_state.depth"><code class="docutils literal notranslate"><span class="pre">depth()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#pyFLD.debug_state.format_debug"><code class="docutils literal notranslate"><span class="pre">format_debug()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pyFLD.debug_state.format_info"><code class="docutils literal notranslate"><span class="pre">format_info()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#pyFLD.debug_state.format_warning"><code class="docutils literal notranslate"><span class="pre">format_warning()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pyFLD.debug_state.keep_depth"><code class="docutils literal notranslate"><span class="pre">keep_depth()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pyFLD.debug_state.keep_depth_in"><code class="docutils literal notranslate"><span class="pre">keep_depth_in()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#pyFLD.debug_state.pop"><code class="docutils literal notranslate"><span class="pre">pop()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#pyFLD.debug_state.push"><code class="docutils literal notranslate"><span class="pre">push()</span></code></a></li>
 </ul>
@@ -193,7 +196,9 @@ grid, star, and temperature field.</p>
 <li><p><strong>fluids</strong> (list of <code class="docutils literal notranslate"><span class="pre">_RadiativeFluid</span></code>) – List of <code class="docutils literal notranslate"><span class="pre">Dust</span></code> and/or <code class="docutils literal notranslate"><span class="pre">Gas</span></code> fluid objects to solve</p></li>
 <li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Enable verbose output (default: True)</p></li>
 <li><p><strong>constant_fluxlimiter</strong> (<em>bool</em><em>, </em><em>optional</em>) – Use constant flux limiter (lambda=1/3) instead of Kley formula (default: False)</p></li>
-<li><p><strong>preconditioner</strong> (<em>str</em><em>, </em><em>optional</em>) – Preconditioning method for iterative solver: ‘ilu’, ‘jacobi’, ‘rescaled ilu’, ‘rescaled jacobi’, or ‘none’ (default: ‘ilu’)</p></li>
+<li><p><strong>preconditioner</strong> (<em>str</em><em>, </em><em>optional</em>) – Preconditioning method for iterative solver: ‘ilu’, ‘jacobi’, ‘rescaled ilu’, ‘rescaled jacobi’, ‘amg’, or ‘none’ (default: ‘ilu’).
+‘amg’ is classical algebraic multigrid (Ruge-Stueben, requires pyamg); its iteration count stays
+flat as the grid grows, so it pays off for large grids (&gt;~1e5 cells) at large dt</p></li>
 <li><p><strong>implicit_viscosity</strong> (<em>bool</em><em>, </em><em>optional</em>) – Treat viscosity implicitly, experimental (default: False)</p></li>
 <li><p><strong>**kwargs</strong> – Arguments passed to <code class="docutils literal notranslate"><span class="pre">fluids._GenericFluid</span></code> (debug, name)</p></li>
 </ul>
@@ -233,7 +238,7 @@ grid, star, and temperature field.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.advance">
-<span class="sig-name descname"><span class="pre">advance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dt=&lt;Quantity</span> <span class="pre">1.</span> <span class="pre">yr&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uf=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recompute_preconditioner=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**ilu_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.advance" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">advance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dt=&lt;Quantity</span> <span class="pre">1.</span> <span class="pre">yr&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uf=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recompute_preconditioner=True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.advance" title="Permalink to this definition"></a></dt>
 <dd><p>Advance radiation-hydrodynamics by one timestep.</p>
 <p>Complete time stepping procedure: update opacities and effective fractions
 for all fluids, compute source terms (irradiation, viscous heating),
@@ -249,9 +254,11 @@ It might be worth setting this to False if the system
 doesn’t change much between steps to save time, especially when
 using ILU as it can be expensive to compute. If False, the previous
 preconditioner is reused when available, and a new one is computed
-otherwise (e.g., on the first call or after changing <code class="docutils literal notranslate"><span class="pre">preconditioner</span></code>).</p></li>
-<li><p><strong>ilu_kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Additional keyword arguments to pass to spilu for ILU preconditioning (default: {})
-Options include ‘drop_tol’ for controlling fill-in and ‘fill_factor’ for maximum nonzeros.</p></li>
+otherwise (e.g., on the first call or after changing <code class="docutils literal notranslate"><span class="pre">preconditioner</span></code>).
+When the matrix changes a lot between steps (large dt far from
+equilibrium), a reused preconditioner needs many more iterations.
+ILU options (drop_tol, fill_factor) are set with configure_solver();
+a reused ILU preconditioner keeps the options it was built with.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
@@ -350,8 +357,33 @@ Q_visc = (9/4) alpha sqrt(gamma) P Omega_K. Works in cylindrical/spherical geome
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyFLD.FLD.RadiativeEnvironment.configure_solver">
-<span class="sig-name descname"><span class="pre">configure_solver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bicgstab'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxiter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">guess</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.configure_solver" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">configure_solver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bicgstab'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxiter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">guess</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.FLD.RadiativeEnvironment.configure_solver" title="Permalink to this definition"></a></dt>
 <dd><p>Configure iterative linear solver parameters.</p>
+<p>Every call resets the arguments that are not passed to their defaults.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>solver</strong> (<em>str</em><em>, </em><em>optional</em>) – Iterative solver: ‘bicgstab’ (default), ‘gmres’, ‘cg’, ‘cgs’, ‘lgmres’, ‘minres’ or ‘qmr’</p></li>
+<li><p><strong>rtol</strong> (<em>float</em><em>, </em><em>optional</em>) – Relative tolerance of the iterative solver (default: 1e-8)</p></li>
+<li><p><strong>maxiter</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum number of iterations (default: 10000)</p></li>
+<li><p><strong>guess</strong> (<em>bool</em><em>, </em><em>optional</em>) – Use the current Er as initial guess (default: True)</p></li>
+<li><p><strong>drop_tol</strong> (<em>float</em><em>, </em><em>optional</em>) – Passed to <code class="docutils literal notranslate"><span class="pre">scipy.sparse.linalg.spilu</span></code> for the ‘ilu’ and ‘rescaled ilu’ preconditioners.
+If None (default), they depend on the grid: drop_tol=0.1, fill_factor=3 for 3D grids
+(at least 5 cells in every direction), where they were 2-8x faster than the spilu
+defaults in tests, and the spilu defaults (drop_tol=1e-4, fill_factor=10) otherwise,
+since sparse factorizations often fail to converge in 1D/2D. Ignored by the other
+preconditioners. New values take effect when the preconditioner is next rebuilt:
+<code class="docutils literal notranslate"><span class="pre">advance(recompute_preconditioner=False)</span></code> keeps reusing the old factorization.</p></li>
+<li><p><strong>fill_factor</strong> (<em>float</em><em>, </em><em>optional</em>) – Passed to <code class="docutils literal notranslate"><span class="pre">scipy.sparse.linalg.spilu</span></code> for the ‘ilu’ and ‘rescaled ilu’ preconditioners.
+If None (default), they depend on the grid: drop_tol=0.1, fill_factor=3 for 3D grids
+(at least 5 cells in every direction), where they were 2-8x faster than the spilu
+defaults in tests, and the spilu defaults (drop_tol=1e-4, fill_factor=10) otherwise,
+since sparse factorizations often fail to converge in 1D/2D. Ignored by the other
+preconditioners. New values take effect when the preconditioner is next rebuilt:
+<code class="docutils literal notranslate"><span class="pre">advance(recompute_preconditioner=False)</span></code> keeps reusing the old factorization.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -544,9 +576,28 @@ implicit viscosity. Applies temperature floor at 3 K to prevent crashes.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="pyFLD.debug_state.format_info">
+<span class="sig-prename descclassname"><span class="pre">pyFLD.debug_state.</span></span><span class="sig-name descname"><span class="pre">format_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.debug_state.format_info" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="pyFLD.debug_state.format_warning">
 <span class="sig-prename descclassname"><span class="pre">pyFLD.debug_state.</span></span><span class="sig-name descname"><span class="pre">format_warning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.debug_state.format_warning" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyFLD.debug_state.keep_depth">
+<span class="sig-prename descclassname"><span class="pre">pyFLD.debug_state.</span></span><span class="sig-name descname"><span class="pre">keep_depth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.debug_state.keep_depth" title="Permalink to this definition"></a></dt>
+<dd><p>Restore the debug depth when func exits, also through an exception or an early
+return, so that a push without its pop cannot shift all later messages.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyFLD.debug_state.keep_depth_in">
+<span class="sig-prename descclassname"><span class="pre">pyFLD.debug_state.</span></span><span class="sig-name descname"><span class="pre">keep_depth_in</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyFLD.debug_state.keep_depth_in" title="Permalink to this definition"></a></dt>
+<dd><p>Apply keep_depth to every method of cls that opens a debug region, i.e. whose
+code calls _push_region. Used by fluids._GenericFluid for itself and all subclasses.</p>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="pyFLD.debug_state.pop">
@@ -1966,7 +2017,7 @@ temperature depends on gas density via T_subl = 2000 * ρ_gas^0.0195 K.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>fluid</strong> (<em>GenericFluid</em><em> or </em><em>higher class</em>) – Fluid object with temperature and density fields. Ideally Dust.</p></li>
+<li><p><strong>fluid</strong> (<em>GenericFluid</em><em> or </em><em>higher class</em>) – Fluid object with temperature and density fields.</p></li>
 <li><p><strong>gas</strong> (<em>GenericFluid</em><em> or </em><em>higher class</em><em>, </em><em>optional</em>) – Gas object with a density field. If not provided, the density of
 <cite>fluid</cite> is used instead, assuming it’s the gas component.</p></li>
 </ul>

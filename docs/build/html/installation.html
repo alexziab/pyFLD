@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Installation &mdash; pyFLD 0.4.4 documentation</title>
+  <title>Installation &mdash; pyFLD 0.5.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -111,6 +111,7 @@ pip<span class="w"> </span>install<span class="w"> </span>.
 </pre></div>
 </div>
 <p>This will make <code class="docutils literal notranslate"><span class="pre">pyFLD</span></code> available for import in your Python environment. Note that this installs a copy of the package: after pulling updates (or editing the source), run <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code> again, otherwise scripts and notebooks outside the repository keep importing the old version. You can check which version is imported with <code class="docutils literal notranslate"><span class="pre">print(fld.__file__,</span> <span class="pre">fld.__version__)</span></code>.</p>
+<p>To also install <code class="docutils literal notranslate"><span class="pre">pyamg</span></code>, needed for the algebraic multigrid preconditioner (<code class="docutils literal notranslate"><span class="pre">preconditioner='amg'</span></code>), use <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">&quot;.[amg]&quot;</span></code> instead.</p>
 </section>
 </section>
 

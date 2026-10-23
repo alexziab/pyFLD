@@ -14,6 +14,13 @@ except ImportError:
     print("if you intend to use irradiation, it is recommended to install numexpr:")
     print("pip install numexpr")
 
+def _import_pyamg():
+    """Import the optional pyamg package for preconditioner='amg', with an install hint if missing."""
+    try: import pyamg
+    except ImportError:
+        raise ImportError("preconditioner='amg' requires pyamg (pip install pyamg)") from None
+    return pyamg
+
 class RadiativeEnvironment(fl._GenericFluid):
     """
     Radiation hydrodynamics solver using Flux-Limited Diffusion (FLD).
@@ -33,7 +40,9 @@ class RadiativeEnvironment(fl._GenericFluid):
     constant_fluxlimiter : bool, optional
         Use constant flux limiter (lambda=1/3) instead of Kley formula (default: False)
     preconditioner : str, optional
-        Preconditioning method for iterative solver: 'ilu', 'jacobi', 'rescaled ilu', 'rescaled jacobi', or 'none' (default: 'ilu')
+        Preconditioning method for iterative solver: 'ilu', 'jacobi', 'rescaled ilu', 'rescaled jacobi', 'amg', or 'none' (default: 'ilu').
+        'amg' is classical algebraic multigrid (Ruge-Stueben, requires pyamg); its iteration count stays
+        flat as the grid grows, so it pays off for large grids (>~1e5 cells) at large dt
     implicit_viscosity : bool, optional
         Treat viscosity implicitly, experimental (default: False)
     ``**kwargs``
@@ -95,11 +104,11 @@ class RadiativeEnvironment(fl._GenericFluid):
         self.implicit_viscosity = implicit_viscosity
         self.verbose = verbose
         self.constant_fluxlimiter = constant_fluxlimiter
-        precondition_options = ['ilu', 'jacobi', 'rescaled ilu', 'rescaled jacobi', 'none']
+        precondition_options = ['ilu', 'jacobi', 'rescaled ilu', 'rescaled jacobi', 'amg', 'none']
         if preconditioner not in precondition_options:
             raise ValueError(f"Invalid preconditioner. Please specify any of: {precondition_options}")
+        if preconditioner == 'amg': _import_pyamg() # optional dependency: fail here rather than at the first advance()
         self.preconditioner = preconditioner
-        self._precondition = False if self.preconditioner == 'none' else True # keep a boolean internally
         if preconditioner.find('rescaled') >= 0 and verbose:
             self._log_warning(f'{preconditioner} preconditioning is experimental.')
 
@@ -107,14 +116,70 @@ class RadiativeEnvironment(fl._GenericFluid):
             self._log_warning("Implicit viscosity is experimental and may be unstable/buggy. Use with caution.")
             self._log_warning("Note that implicit viscosity fails when Δt > e/Q_visc.")
         self.configure_solver()
+        if verbose: self._inform_solver_choice()
         self.prepare_grid()
         self.setup()
 
         self._pop_region()
 
-    def configure_solver(self, solver='bicgstab', rtol=1e-8, maxiter=10000, guess=True):
-        """Configure iterative linear solver parameters."""
-        self.solver_settings = dict(solver=solver, rtol=rtol, maxiter=maxiter, guess=guess)
+    def configure_solver(self, solver='bicgstab', rtol=1e-8, maxiter=10000, guess=True,
+                         drop_tol=None, fill_factor=None):
+        """
+        Configure iterative linear solver parameters.
+
+        Every call resets the arguments that are not passed to their defaults.
+
+        Parameters
+        ----------
+        solver : str, optional
+            Iterative solver: 'bicgstab' (default), 'gmres', 'cg', 'cgs', 'lgmres', 'minres' or 'qmr'
+        rtol : float, optional
+            Relative tolerance of the iterative solver (default: 1e-8)
+        maxiter : int, optional
+            Maximum number of iterations (default: 10000)
+        guess : bool, optional
+            Use the current Er as initial guess (default: True)
+        drop_tol, fill_factor : float, optional
+            Passed to ``scipy.sparse.linalg.spilu`` for the 'ilu' and 'rescaled ilu' preconditioners.
+            If None (default), they depend on the grid: drop_tol=0.1, fill_factor=3 for 3D grids
+            (at least 5 cells in every direction), where they were 2-8x faster than the spilu
+            defaults in tests, and the spilu defaults (drop_tol=1e-4, fill_factor=10) otherwise,
+            since sparse factorizations often fail to converge in 1D/2D. Ignored by the other
+            preconditioners. New values take effect when the preconditioner is next rebuilt:
+            ``advance(recompute_preconditioner=False)`` keeps reusing the old factorization.
+        """
+        self.solver_settings = dict(solver=solver, rtol=rtol, maxiter=maxiter, guess=guess,
+                                    drop_tol=drop_tol, fill_factor=fill_factor)
+
+    def _is_3D(self):
+        """Whether the grid is genuinely 3D: at least 5 cells in every direction, the smallest
+        case where the 3D ILU defaults were tested. Thinner grids behave like 1D/2D problems."""
+        g = self.grid
+        return min(g.NX1, g.NX2, g.NX3) >= 5
+
+    def _ilu_options(self):
+        """spilu options: the values set in configure_solver(), or defaults that depend on the grid."""
+        # older snapshots store solver_settings without these keys
+        drop_tol = self.solver_settings.get('drop_tol')
+        fill_factor = self.solver_settings.get('fill_factor')
+        if drop_tol is None: drop_tol = 0.1 if self._is_3D() else 1e-4
+        if fill_factor is None: fill_factor = 3 if self._is_3D() else 10
+        return dict(drop_tol=drop_tol, fill_factor=fill_factor)
+
+    def _inform_solver_choice(self):
+        """Point out faster preconditioner options for large or 3D grids (verbose only)."""
+        g = self.grid
+        # not for 1D: the matrix is tridiagonal there, and ILU already solves it exactly
+        multidim = sum(n > 1 for n in (g.NX1, g.NX2, g.NX3)) >= 2
+        large = g.NX1 * g.NX2 * g.NX3 >= 1e5
+        if self.preconditioner != 'amg' and (self._is_3D() or (multidim and large)):
+            self._log_info("preconditioner='amg' (requires pyamg) is usually much faster "
+                           "for high-resolution or 3D grids.")
+        if self.preconditioner in ['ilu', 'rescaled ilu'] and self._is_3D():
+            opts = self._ilu_options()
+            self._log_info(f"3D grid: ILU uses drop_tol={opts['drop_tol']:g}, fill_factor={opts['fill_factor']:g} "
+                           "instead of the spilu defaults (1e-4, 10); change them with "
+                           "configure_solver(drop_tol=..., fill_factor=...).")
 
     def compute_irradiation_geometry(self):
         """Precompute geometric factors for irradiation heating term."""
@@ -485,7 +550,7 @@ class RadiativeEnvironment(fl._GenericFluid):
         self._scaled_arrays = False
         self._pop_region()
 
-    def _solve_system(self, recompute_preconditioner=True, **ilu_kwargs):
+    def _solve_system(self, recompute_preconditioner=True):
         """
         Solve the linear FLD system using iterative or direct solver.
 
@@ -514,8 +579,12 @@ class RadiativeEnvironment(fl._GenericFluid):
         g = self.grid
         act = g.active
 
+        # derived from self.preconditioner on every call, so that changing it after
+        # construction (or restoring it from a snapshot) switches the solve path too
+        precondition = self.preconditioner != 'none'
+
         # only M and B are rescaled; self.Er is never modified here
-        rescaled = self._precondition and 'rescaled' in self.preconditioner
+        rescaled = precondition and 'rescaled' in self.preconditioner
         if rescaled:
             self._compute_preconditioner()
             self._scale_arrays()
@@ -539,9 +608,12 @@ class RadiativeEnvironment(fl._GenericFluid):
         Enew = np.zeros_like(self.B) # includes unit info
         Bact_ = self.B[act].to_value(self.E0)
 
-        A = sp.diags(diagonals, offsets, format='csc') # type: ignore[attr-defined]
+        # SuperLU (ILU and the direct solver) works in CSC;
+        # the iterative solvers' matrix-vector products are faster in CSR
+        fmt = 'csc' if self.preconditioner in ['ilu', 'rescaled ilu', 'none'] else 'csr'
+        A = sp.diags(diagonals, offsets, format=fmt) # type: ignore[attr-defined]
         
-        if self._precondition:
+        if precondition:
             # reuse the previous preconditioner only if it exists and is of the requested type
             reusable = self.Mat is not None and self._Mat_kind == self.preconditioner
             if recompute_preconditioner or not reusable:
@@ -550,7 +622,7 @@ class RadiativeEnvironment(fl._GenericFluid):
                 if self.preconditioner in ['ilu', 'rescaled ilu']:
                     try:
                         self._logging("Attempting ILU preconditioning...")
-                        ilu = sp.linalg.spilu(A, **ilu_kwargs) # Sparse ILU decomposition
+                        ilu = sp.linalg.spilu(A, **self._ilu_options()) # Sparse ILU decomposition
                         self.Mat = sp.linalg.LinearOperator(A.shape, ilu.solve)
                         self._logging("ILU preconditioning successful.")
                     except (RuntimeError, MemoryError):
@@ -559,6 +631,13 @@ class RadiativeEnvironment(fl._GenericFluid):
                         D_inv = 1.0 / A.diagonal()
                         self.Mat = sp.linalg.LinearOperator(A.shape, lambda x: D_inv * x)
                         self._logging("Jacobi preconditioning successful.")
+                elif self.preconditioner == 'amg':
+                    pyamg = _import_pyamg() # also reached when preconditioner is changed after construction
+                    self._logging("Building algebraic multigrid hierarchy...")
+                    # direct interpolation: same convergence as classical here, without its console warnings
+                    ml = pyamg.ruge_stuben_solver(A, interpolation='direct')
+                    self.Mat = ml.aspreconditioner(cycle='V')
+                    self._logging(f"AMG preconditioning successful ({len(ml.levels)} levels).")
                 elif self.preconditioner in ['jacobi', 'rescaled jacobi']:
                     self._logging("Using Jacobi preconditioning...")
                     D_inv = 1.0 / A.diagonal()
@@ -805,7 +884,7 @@ class RadiativeEnvironment(fl._GenericFluid):
 
         self._pop_region()
     
-    def advance(self, dt=1*u.yr, uf=0, recompute_preconditioner=True, **ilu_kwargs):
+    def advance(self, dt=1*u.yr, uf=0, recompute_preconditioner=True):
         """
         Advance radiation-hydrodynamics by one timestep.
 
@@ -827,9 +906,10 @@ class RadiativeEnvironment(fl._GenericFluid):
             using ILU as it can be expensive to compute. If False, the previous
             preconditioner is reused when available, and a new one is computed
             otherwise (e.g., on the first call or after changing ``preconditioner``).
-        ilu_kwargs : dict, optional
-            Additional keyword arguments to pass to spilu for ILU preconditioning (default: {})
-            Options include 'drop_tol' for controlling fill-in and 'fill_factor' for maximum nonzeros.
+            When the matrix changes a lot between steps (large dt far from
+            equilibrium), a reused preconditioner needs many more iterations.
+            ILU options (drop_tol, fill_factor) are set with configure_solver();
+            a reused ILU preconditioner keeps the options it was built with.
 
         Raises
         ------
@@ -852,7 +932,7 @@ class RadiativeEnvironment(fl._GenericFluid):
                 raise ValueError(f"{self.get_prefix()}: implicit viscosity requires dt < {dt_visc.to('yr'):.3e} to avoid negative energy update")
         self._build_matrix(dt=dt)
 
-        Enew = self._solve_system(recompute_preconditioner=recompute_preconditioner, **ilu_kwargs)
+        Enew = self._solve_system(recompute_preconditioner=recompute_preconditioner)
         self.enforce_boundaries(Enew)
         self.update_temperature(Enew, dt, uf=uf)
         self.update_fluids()
@@ -913,7 +993,7 @@ class RadiativeEnvironment(fl._GenericFluid):
         skipped_keys = ['M', 'X', 'Y', 'Z', 'B', 'P', 'Mat', '_Mat_kind', # matrix
                 'eng', 'prs', # derivative quantities
                 'geom', 'fluids', 'grid', 'star', 'Mactive', # objects and misc
-                'solve_x1', 'solve_x2', 'solve_x3', '_precondition', # flags
+                'solve_x1', 'solve_x2', 'solve_x3', # flags
                 'irradiation']
 
         # record which fluid folders belong to this snapshot, so that
@@ -969,6 +1049,12 @@ def create_from_snapshot(dirc='./', name='REnv'):
 
     REnv = RadiativeEnvironment(fluids=fluids)
     tb.read_and_assign_params(REnv, dirc=model_dirc)
+    if REnv.preconditioner == 'amg': # the snapshot may come from a machine with pyamg
+        try: _import_pyamg()
+        except ImportError:
+            REnv._log_warning("snapshot used preconditioner='amg', but pyamg is not installed; "
+                              "falling back to 'ilu' (pip install pyamg to use 'amg')")
+            REnv.preconditioner = 'ilu'
     REnv._rebuild_after_read()
 
     return REnv

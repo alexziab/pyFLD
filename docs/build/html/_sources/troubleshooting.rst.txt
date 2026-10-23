@@ -8,17 +8,17 @@ Solver & Convergence
 
 **Q: Solver doesn't converge or takes many iterations**
 
-A: Switch to the ``rescaled ilu`` preconditioner, which often converges faster:
+A: Choose the preconditioner by grid size and dimension. In tests on 2D and 3D disk models (16k–1.3M cells):
+
+- **1D and small 2D grids**: the default ``ilu`` works well.
+- **Large 2D (≳ 10⁵ cells) and all 3D grids**: ``amg`` (algebraic multigrid, requires ``pip install pyamg``). Its iteration count does not grow with resolution: it was 1.4–1.7× faster than ``ilu`` on 2D grids of 0.26–1M cells, and 2–30× faster than any other option in 3D.
+- **3D without** ``pyamg``: ``jacobi``. The ILU factorization is expensive in 3D (see the next question). Note that Jacobi needs hundreds to thousands of iterations, and at the same ``rtol`` its solution can be noticeably less accurate, because ``rtol`` limits the residual, not the error.
+- The ``rescaled`` variants made no measurable difference in these tests.
+- ``none`` (direct solver) is only practical for small problems: in 3D it was already slower than every iterative option at 350k cells, and its memory use grows quickly.
 
 .. code-block:: python
 
-    Disk = fld.FLD.RadiativeEnvironment([gas], preconditioner='rescaled ilu')
-
-For very large problems (> 10⁸ cells), the ILU preconditioner may be expensive. Try ``jacobi`` instead:
-
-.. code-block:: python
-
-    Disk = fld.FLD.RadiativeEnvironment([gas], preconditioner='jacobi')
+    Disk = fld.FLD.RadiativeEnvironment([gas], preconditioner='amg')
 
 You can also adjust the solver tolerance and/or iteration limit:
 
@@ -27,6 +27,26 @@ You can also adjust the solver tolerance and/or iteration limit:
     Disk.configure_solver(rtol=1e-4, maxiter=20000)
 
 Lower tolerance (stricter convergence) slows down the solver. Increase ``maxiter`` if needed.
+
+**Q: Which ILU settings (drop_tol, fill_factor) should I use?**
+
+A: It depends strongly on the dimensionality of the problem, and there is no setting that is best everywhere. By default, pyFLD uses ``drop_tol=0.1, fill_factor=3`` on 3D grids (at least 5 cells in every direction) and the ``spilu`` defaults otherwise; with ``verbose=True`` it says so when the 3D values are used. To choose them yourself, pass them to ``configure_solver``, which forwards them to ``scipy.sparse.linalg.spilu``:
+
+.. code-block:: python
+
+    Disk.configure_solver(drop_tol=1e-2, fill_factor=10)
+
+.. warning::
+
+    ILU settings that are fast for one setup can fail on another. In tests on 2D and 3D disk models (16k–350k cells, ``rtol`` of 1e-4 and 1e-8):
+
+    - **2D**: the ``spilu`` defaults (``drop_tol=1e-4, fill_factor=10``) were the fastest ILU setting, or within 10% of it. Sparse settings such as ``drop_tol=1e-2, fill_factor=1`` or ``drop_tol=0.1`` often **did not converge at all**, already at 65k cells.
+    - **3D**: the defaults were 2–8× slower than the best setting, and the slowest of all at 350k cells, where the factorization alone took ~20 s per step. Sparse settings (``drop_tol=0.1, fill_factor=2–3``) were the fastest.
+    - ``drop_tol=1e-2, fill_factor=10`` converged in every case tested and was within ~2.5× of the best ILU setting, so it is a reasonable starting point when unsure.
+    - Raising ``fill_factor`` does not always reduce the iteration count: once the fill limit is reached, entries are dropped in a way that can make the factorization worse.
+    - Keep the default column ordering: ``permc_spec='NATURAL'`` made the factorization 40–60× slower in 3D. Disabling pivoting (``diag_pivot_thresh=0``) made no difference.
+
+    In 3D, no ILU setting beat plain ``jacobi`` in these tests, and ``amg`` was 4–6× faster than the best ILU setting (up to 40× faster than the defaults). In 2D, tuned ILU and ``amg`` performed similarly, while ``jacobi`` needed thousands of iterations at ``rtol=1e-8``: ~11600 at 262k cells, more than the default ``maxiter=10000``. If ``pyamg`` is available, prefer ``preconditioner='amg'`` over tuning ILU; otherwise, use ``ilu`` with the defaults in 2D and ``jacobi`` in 3D.
 
 **Q: advance() raises "RuntimeError: ... did not converge"**
 
@@ -138,23 +158,21 @@ Memory & Performance
 
 **Q: Out of memory with large grids**
 
-A: The ILU preconditioner builds a factorization which can use significant memory. Solutions:
+A: In tests, the ``ilu``, ``amg`` and ``jacobi`` preconditioners used similar memory (within ~10%); most of it goes to the fields stored per cell. With frequency-dependent irradiation, the optical depth is stored per wavelength bin, so memory grows with the number of bins (a 3D disk with 5.3M cells and ~100 bins would need ~27 GB). Solutions:
 
-1. Switch to a diagonal preconditioner:
-
-.. code-block:: python
-
-    Disk = fld.FLD.RadiativeEnvironment([gas], preconditioner='jacobi')
+1. Use fewer wavelength bins for frequency-dependent irradiation
 
 2. Reduce grid resolution (fewer cells)
 
-3. Use a machine with more RAM or run on a cluster
+3. Avoid ``preconditioner='none'``: the direct solver's memory grows much faster than the grid in 3D
+
+4. Use a machine with more RAM or run on a cluster
 
 **Q: Simulation runs slowly**
 
 A: Profile your bottleneck:
 
-1. **Solver (most common)**: Try different preconditioners or relax tolerance (``rtol``)
+1. **Solver (most common)**: choose the preconditioner for your grid (see "Solver doesn't converge or takes many iterations" above) or relax the tolerance (``rtol``)
 2. **Irradiation calculations**: Install ``numexpr`` for speed: ``pip install numexpr``
 3. **Hydrostatic equilibrium**: Called infrequently (only when needed), not every step
 
@@ -162,7 +180,8 @@ For large problems, consider:
 
 - Coarser time steps (larger ``dt``)
 - Relaxed convergence criterion (larger ``rtol``, e.g., 1e-6 instead of 1e-8)
-- Reusing the preconditioner between steps with ``Disk.advance(dt, recompute_preconditioner=False)``
+- The ``amg`` preconditioner (``pip install pyamg``), which scales better than ``ilu`` on large grids
+- Reusing the preconditioner between steps with ``Disk.advance(dt, recompute_preconditioner=False)``. This only helps when the matrix changes little between steps (small ``dt``, or close to equilibrium). Far from equilibrium at large ``dt``, a reused preconditioner can need 20–50× more iterations and make the run several times slower
 
 You can also use the ``debug=True`` option in both ``Gas/Dust`` and ``RadiativeEnvironment`` to print debugging information which can help pinpoint issues.
 

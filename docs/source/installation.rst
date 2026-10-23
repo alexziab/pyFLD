@@ -30,3 +30,5 @@ You can install the package via GitHub with:
     pip install .
 
 This will make ``pyFLD`` available for import in your Python environment. Note that this installs a copy of the package: after pulling updates (or editing the source), run ``pip install .`` again, otherwise scripts and notebooks outside the repository keep importing the old version. You can check which version is imported with ``print(fld.__file__, fld.__version__)``.
+
+To also install ``pyamg``, needed for the algebraic multigrid preconditioner (``preconditioner='amg'``), use ``pip install ".[amg]"`` instead.

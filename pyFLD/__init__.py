@@ -1,4 +1,4 @@
-__version__ = '0.4.4'
+__version__ = '0.5.0'
 
 __all__ = ['debug_state', 'grid', 'tools', 'star', 'fluids', 'FLD', 'radmc_helper']
 

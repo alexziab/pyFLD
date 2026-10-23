@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Troubleshooting &amp; FAQ &mdash; pyFLD 0.4.4 documentation</title>
+  <title>Troubleshooting &amp; FAQ &mdash; pyFLD 0.5.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -97,12 +97,15 @@
 <section id="solver-convergence">
 <h2>Solver &amp; Convergence<a class="headerlink" href="#solver-convergence" title="Permalink to this heading"></a></h2>
 <p><strong>Q: Solver doesn’t converge or takes many iterations</strong></p>
-<p>A: Switch to the <code class="docutils literal notranslate"><span class="pre">rescaled</span> <span class="pre">ilu</span></code> preconditioner, which often converges faster:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">FLD</span><span class="o">.</span><span class="n">RadiativeEnvironment</span><span class="p">([</span><span class="n">gas</span><span class="p">],</span> <span class="n">preconditioner</span><span class="o">=</span><span class="s1">&#39;rescaled ilu&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>For very large problems (&gt; 10⁸ cells), the ILU preconditioner may be expensive. Try <code class="docutils literal notranslate"><span class="pre">jacobi</span></code> instead:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">FLD</span><span class="o">.</span><span class="n">RadiativeEnvironment</span><span class="p">([</span><span class="n">gas</span><span class="p">],</span> <span class="n">preconditioner</span><span class="o">=</span><span class="s1">&#39;jacobi&#39;</span><span class="p">)</span>
+<p>A: Choose the preconditioner by grid size and dimension. In tests on 2D and 3D disk models (16k–1.3M cells):</p>
+<ul class="simple">
+<li><p><strong>1D and small 2D grids</strong>: the default <code class="docutils literal notranslate"><span class="pre">ilu</span></code> works well.</p></li>
+<li><p><strong>Large 2D (≳ 10⁵ cells) and all 3D grids</strong>: <code class="docutils literal notranslate"><span class="pre">amg</span></code> (algebraic multigrid, requires <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pyamg</span></code>). Its iteration count does not grow with resolution: it was 1.4–1.7× faster than <code class="docutils literal notranslate"><span class="pre">ilu</span></code> on 2D grids of 0.26–1M cells, and 2–30× faster than any other option in 3D.</p></li>
+<li><p><strong>3D without</strong> <code class="docutils literal notranslate"><span class="pre">pyamg</span></code>: <code class="docutils literal notranslate"><span class="pre">jacobi</span></code>. The ILU factorization is expensive in 3D (see the next question). Note that Jacobi needs hundreds to thousands of iterations, and at the same <code class="docutils literal notranslate"><span class="pre">rtol</span></code> its solution can be noticeably less accurate, because <code class="docutils literal notranslate"><span class="pre">rtol</span></code> limits the residual, not the error.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">rescaled</span></code> variants made no measurable difference in these tests.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">none</span></code> (direct solver) is only practical for small problems: in 3D it was already slower than every iterative option at 350k cells, and its memory use grows quickly.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">FLD</span><span class="o">.</span><span class="n">RadiativeEnvironment</span><span class="p">([</span><span class="n">gas</span><span class="p">],</span> <span class="n">preconditioner</span><span class="o">=</span><span class="s1">&#39;amg&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>You can also adjust the solver tolerance and/or iteration limit:</p>
@@ -110,6 +113,23 @@
 </pre></div>
 </div>
 <p>Lower tolerance (stricter convergence) slows down the solver. Increase <code class="docutils literal notranslate"><span class="pre">maxiter</span></code> if needed.</p>
+<p><strong>Q: Which ILU settings (drop_tol, fill_factor) should I use?</strong></p>
+<p>A: It depends strongly on the dimensionality of the problem, and there is no setting that is best everywhere. By default, pyFLD uses <code class="docutils literal notranslate"><span class="pre">drop_tol=0.1,</span> <span class="pre">fill_factor=3</span></code> on 3D grids (at least 5 cells in every direction) and the <code class="docutils literal notranslate"><span class="pre">spilu</span></code> defaults otherwise; with <code class="docutils literal notranslate"><span class="pre">verbose=True</span></code> it says so when the 3D values are used. To choose them yourself, pass them to <code class="docutils literal notranslate"><span class="pre">configure_solver</span></code>, which forwards them to <code class="docutils literal notranslate"><span class="pre">scipy.sparse.linalg.spilu</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span><span class="o">.</span><span class="n">configure_solver</span><span class="p">(</span><span class="n">drop_tol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span> <span class="n">fill_factor</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>ILU settings that are fast for one setup can fail on another. In tests on 2D and 3D disk models (16k–350k cells, <code class="docutils literal notranslate"><span class="pre">rtol</span></code> of 1e-4 and 1e-8):</p>
+<ul class="simple">
+<li><p><strong>2D</strong>: the <code class="docutils literal notranslate"><span class="pre">spilu</span></code> defaults (<code class="docutils literal notranslate"><span class="pre">drop_tol=1e-4,</span> <span class="pre">fill_factor=10</span></code>) were the fastest ILU setting, or within 10% of it. Sparse settings such as <code class="docutils literal notranslate"><span class="pre">drop_tol=1e-2,</span> <span class="pre">fill_factor=1</span></code> or <code class="docutils literal notranslate"><span class="pre">drop_tol=0.1</span></code> often <strong>did not converge at all</strong>, already at 65k cells.</p></li>
+<li><p><strong>3D</strong>: the defaults were 2–8× slower than the best setting, and the slowest of all at 350k cells, where the factorization alone took ~20 s per step. Sparse settings (<code class="docutils literal notranslate"><span class="pre">drop_tol=0.1,</span> <span class="pre">fill_factor=2–3</span></code>) were the fastest.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">drop_tol=1e-2,</span> <span class="pre">fill_factor=10</span></code> converged in every case tested and was within ~2.5× of the best ILU setting, so it is a reasonable starting point when unsure.</p></li>
+<li><p>Raising <code class="docutils literal notranslate"><span class="pre">fill_factor</span></code> does not always reduce the iteration count: once the fill limit is reached, entries are dropped in a way that can make the factorization worse.</p></li>
+<li><p>Keep the default column ordering: <code class="docutils literal notranslate"><span class="pre">permc_spec='NATURAL'</span></code> made the factorization 40–60× slower in 3D. Disabling pivoting (<code class="docutils literal notranslate"><span class="pre">diag_pivot_thresh=0</span></code>) made no difference.</p></li>
+</ul>
+<p>In 3D, no ILU setting beat plain <code class="docutils literal notranslate"><span class="pre">jacobi</span></code> in these tests, and <code class="docutils literal notranslate"><span class="pre">amg</span></code> was 4–6× faster than the best ILU setting (up to 40× faster than the defaults). In 2D, tuned ILU and <code class="docutils literal notranslate"><span class="pre">amg</span></code> performed similarly, while <code class="docutils literal notranslate"><span class="pre">jacobi</span></code> needed thousands of iterations at <code class="docutils literal notranslate"><span class="pre">rtol=1e-8</span></code>: ~11600 at 262k cells, more than the default <code class="docutils literal notranslate"><span class="pre">maxiter=10000</span></code>. If <code class="docutils literal notranslate"><span class="pre">pyamg</span></code> is available, prefer <code class="docutils literal notranslate"><span class="pre">preconditioner='amg'</span></code> over tuning ILU; otherwise, use <code class="docutils literal notranslate"><span class="pre">ilu</span></code> with the defaults in 2D and <code class="docutils literal notranslate"><span class="pre">jacobi</span></code> in 3D.</p>
+</div>
 <p><strong>Q: advance() raises “RuntimeError: … did not converge”</strong></p>
 <p>A: The linear solver did not reach the requested tolerance within <code class="docutils literal notranslate"><span class="pre">maxiter</span></code> iterations (or the direct solver returned non-finite values). In that case <code class="docutils literal notranslate"><span class="pre">advance()</span></code> leaves the temperature and radiation field unchanged, so you can catch the error and retry, e.g. with a smaller time step or a different preconditioner:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
@@ -188,21 +208,17 @@
 <section id="memory-performance">
 <h2>Memory &amp; Performance<a class="headerlink" href="#memory-performance" title="Permalink to this heading"></a></h2>
 <p><strong>Q: Out of memory with large grids</strong></p>
-<p>A: The ILU preconditioner builds a factorization which can use significant memory. Solutions:</p>
+<p>A: In tests, the <code class="docutils literal notranslate"><span class="pre">ilu</span></code>, <code class="docutils literal notranslate"><span class="pre">amg</span></code> and <code class="docutils literal notranslate"><span class="pre">jacobi</span></code> preconditioners used similar memory (within ~10%); most of it goes to the fields stored per cell. With frequency-dependent irradiation, the optical depth is stored per wavelength bin, so memory grows with the number of bins (a 3D disk with 5.3M cells and ~100 bins would need ~27 GB). Solutions:</p>
 <ol class="arabic simple">
-<li><p>Switch to a diagonal preconditioner:</p></li>
-</ol>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Disk</span> <span class="o">=</span> <span class="n">fld</span><span class="o">.</span><span class="n">FLD</span><span class="o">.</span><span class="n">RadiativeEnvironment</span><span class="p">([</span><span class="n">gas</span><span class="p">],</span> <span class="n">preconditioner</span><span class="o">=</span><span class="s1">&#39;jacobi&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-<ol class="arabic simple" start="2">
+<li><p>Use fewer wavelength bins for frequency-dependent irradiation</p></li>
 <li><p>Reduce grid resolution (fewer cells)</p></li>
+<li><p>Avoid <code class="docutils literal notranslate"><span class="pre">preconditioner='none'</span></code>: the direct solver’s memory grows much faster than the grid in 3D</p></li>
 <li><p>Use a machine with more RAM or run on a cluster</p></li>
 </ol>
 <p><strong>Q: Simulation runs slowly</strong></p>
 <p>A: Profile your bottleneck:</p>
 <ol class="arabic simple">
-<li><p><strong>Solver (most common)</strong>: Try different preconditioners or relax tolerance (<code class="docutils literal notranslate"><span class="pre">rtol</span></code>)</p></li>
+<li><p><strong>Solver (most common)</strong>: choose the preconditioner for your grid (see “Solver doesn’t converge or takes many iterations” above) or relax the tolerance (<code class="docutils literal notranslate"><span class="pre">rtol</span></code>)</p></li>
 <li><p><strong>Irradiation calculations</strong>: Install <code class="docutils literal notranslate"><span class="pre">numexpr</span></code> for speed: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">numexpr</span></code></p></li>
 <li><p><strong>Hydrostatic equilibrium</strong>: Called infrequently (only when needed), not every step</p></li>
 </ol>
@@ -210,7 +226,8 @@
 <ul class="simple">
 <li><p>Coarser time steps (larger <code class="docutils literal notranslate"><span class="pre">dt</span></code>)</p></li>
 <li><p>Relaxed convergence criterion (larger <code class="docutils literal notranslate"><span class="pre">rtol</span></code>, e.g., 1e-6 instead of 1e-8)</p></li>
-<li><p>Reusing the preconditioner between steps with <code class="docutils literal notranslate"><span class="pre">Disk.advance(dt,</span> <span class="pre">recompute_preconditioner=False)</span></code></p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">amg</span></code> preconditioner (<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pyamg</span></code>), which scales better than <code class="docutils literal notranslate"><span class="pre">ilu</span></code> on large grids</p></li>
+<li><p>Reusing the preconditioner between steps with <code class="docutils literal notranslate"><span class="pre">Disk.advance(dt,</span> <span class="pre">recompute_preconditioner=False)</span></code>. This only helps when the matrix changes little between steps (small <code class="docutils literal notranslate"><span class="pre">dt</span></code>, or close to equilibrium). Far from equilibrium at large <code class="docutils literal notranslate"><span class="pre">dt</span></code>, a reused preconditioner can need 20–50× more iterations and make the run several times slower</p></li>
 </ul>
 <p>You can also use the <code class="docutils literal notranslate"><span class="pre">debug=True</span></code> option in both <code class="docutils literal notranslate"><span class="pre">Gas/Dust</span></code> and <code class="docutils literal notranslate"><span class="pre">RadiativeEnvironment</span></code> to print debugging information which can help pinpoint issues.</p>
 </section>
